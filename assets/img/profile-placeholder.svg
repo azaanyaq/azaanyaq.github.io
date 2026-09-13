@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+<!-- PLACEHOLDER profile photo. Replace with assets/img/profile.jpg and update index.html. -->
+<rect width="400" height="400" fill="#0F1113"/>
+<g fill="none" stroke="#3A3E44" stroke-width="3">
+<circle cx="200" cy="160" r="64"/>
+<path d="M80 400 C80 300 130 260 200 260 C270 260 320 300 320 400"/>
+</g>
+</svg>

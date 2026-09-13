@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- PLACEHOLDER: name -->
+  <title>Projects · Your Name</title>
+  <meta name="description" content="Projects in computer vision, robotics, ML and mechanical design.">
+  <meta name="theme-color" content="#0A0B0D">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- data-site-root: path from this page to the site root, used to resolve
+     image paths in js/projects-data.js -->
+<body data-site-root="../">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <nav class="site-nav container" aria-label="Main">
+      <!-- PLACEHOLDER: your name -->
+      <a class="site-name" href="../">Your Name</a>
+      <ul class="nav-links">
+        <li><a href="../">About</a></li>
+        <li><a href="./" aria-current="page">Projects</a></li>
+        <!-- PLACEHOLDER: replace assets/cv/cv.pdf with your CV -->
+        <li><a href="../assets/cv/cv.pdf" target="_blank" rel="noopener">CV</a></li>
+        <!-- PLACEHOLDER: LinkedIn URL -->
+        <li><a href="https://www.linkedin.com/in/your-profile/" target="_blank" rel="noopener">LinkedIn<span class="external-mark" aria-hidden="true">↗</span></a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" class="container">
+    <header class="page-header">
+      <h1 class="page-title">Projects</h1>
+      <!-- PLACEHOLDER: intro line -->
+      <p class="page-intro">Selected work across perception, autonomy, software and mechanical design.</p>
+    </header>
+
+    <!-- Everything below is rendered from js/projects-data.js -->
+    <div class="filters" id="project-filters" role="group" aria-label="Filter projects by category"></div>
+    <ul class="project-grid" id="project-grid" aria-live="polite"></ul>
+    <p class="empty-state" id="project-empty" hidden>No projects in this category yet.</p>
+    <noscript><p class="empty-state">The project list needs JavaScript enabled.</p></noscript>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <!-- PLACEHOLDER: name + contact -->
+      <span>© 2026 Your Name</span>
+      <a href="mailto:you@example.com">you@example.com</a>
+    </div>
+  </footer>
+
+  <!-- Project detail overlay (content filled in by js/projects.js) -->
+  <dialog class="detail" id="project-detail" aria-labelledby="detail-title">
+    <div class="detail-scrim" aria-hidden="true"></div>
+    <div class="detail-panel">
+      <div class="detail-inner">
+        <div class="detail-bar">
+          <button type="button" class="detail-close" autofocus>
+            Close
+            <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+          </button>
+        </div>
+        <div class="detail-content"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="../js/projects-data.js"></script>
+  <script src="../js/projects.js"></script>
+</body>
+</html>
