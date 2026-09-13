@@ -78,7 +78,8 @@
 
   const categories = typeof PROJECT_CATEGORIES !== "undefined" ? PROJECT_CATEGORIES : [];
   const projects = typeof PROJECTS !== "undefined" ? PROJECTS : [];
-  const categoryLabels = new Map(categories.map((c) => [c.id, c.label]));
+  const techDomains = typeof TECH_DOMAINS !== "undefined" ? TECH_DOMAINS : {};
+  const categoriesById = new Map(categories.map((c) => [c.id, c]));
   const projectsById = new Map();
   projects.forEach((p) => {
     if (!p || !p.id || !p.title) return console.warn("Project is missing an id or title:", p);
@@ -103,6 +104,7 @@
   const scrim = dialog.querySelector(".detail-scrim");
   const inner = dialog.querySelector(".detail-inner");
   const contentEl = dialog.querySelector(".detail-content");
+  const stripeEl = dialog.querySelector(".detail-stripe");
 
   let activeFilter = "all";
   let openId = null;
@@ -141,6 +143,21 @@
     return key.replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
   }
 
+  function categoryLabel(id) {
+    const category = categoriesById.get(id);
+    return (category && category.label) || titleCase(id);
+  }
+
+  function categoryColor(id) {
+    const category = categoriesById.get(id);
+    return (category && category.color) || "var(--muted)";
+  }
+
+  // One solid segment per category, used for the card and detail stripes.
+  function stripeSegments(ids) {
+    return ids.map((id) => h("span", { style: `background: ${categoryColor(id)}` }));
+  }
+
   function isExternal(url) {
     try {
       return new URL(url, location.href).origin !== location.origin;
@@ -155,7 +172,7 @@
     return h(
       "ul",
       { class: "tags", "aria-label": "Categories" },
-      ids.map((id) => h("li", null, categoryLabels.get(id) || titleCase(id)))
+      ids.map((id) => h("li", { style: `--cat: ${categoryColor(id)}` }, categoryLabel(id)))
     );
   }
 
@@ -207,7 +224,11 @@
       "section",
       { "aria-labelledby": "detail-stack-title" },
       h("h3", { class: "aside-title", id: "detail-stack-title" }, "Tech stack"),
-      h("ul", { class: "stack-list" }, stack.map((s) => h("li", null, s)))
+      h(
+        "ul",
+        { class: "stack-list" },
+        stack.map((s) => h("li", { style: `--cat: ${techDomains[s] ? categoryColor(techDomains[s]) : "var(--muted)"}` }, s))
+      )
     );
   }
 
@@ -238,9 +259,17 @@
           opt.id === "all"
             ? projectsById.size
             : [...projectsById.values()].filter((p) => (p.categories || []).includes(opt.id)).length;
+        const isAll = opt.id === "all";
         const btn = h(
           "button",
-          { type: "button", class: "filter", "data-filter": opt.id, "aria-pressed": String(opt.id === activeFilter) },
+          {
+            type: "button",
+            class: "filter",
+            "data-filter": opt.id,
+            "aria-pressed": String(opt.id === activeFilter),
+            style: isAll ? null : `--cat: ${categoryColor(opt.id)}`,
+          },
+          isAll ? null : h("span", { class: "dot", "aria-hidden": "true" }),
           opt.label,
           h("span", { class: "filter-count", "aria-hidden": "true" }, String(count))
         );
@@ -263,12 +292,18 @@
       ? h("img", { src: asset(project.thumbnail), alt: project.thumbnailAlt || "", loading: "lazy" })
       : h("div", { class: "media-fallback", "aria-hidden": "true" }, "No image");
 
+    const ids = project.categories || [];
     return h(
       "li",
       null,
       h(
         "article",
-        { class: "card", "data-card": project.id },
+        {
+          class: "card corner-marks",
+          "data-card": project.id,
+          style: ids.length ? `--card-cat: ${categoryColor(ids[0])}` : null,
+        },
+        ids.length ? h("div", { class: "card-stripe", "aria-hidden": "true" }, stripeSegments(ids)) : null,
         h("div", { class: "card-media" }, media),
         h(
           "div",
@@ -308,6 +343,7 @@
       areas.aside.length ? h("aside", { class: "detail-aside" }, areas.aside) : null
     );
 
+    stripeEl.replaceChildren(...stripeSegments(project.categories || []));
     contentEl.replaceChildren(
       h("header", { class: "detail-header" }, areas.header),
       areas.main.length || areas.aside.length ? body : null

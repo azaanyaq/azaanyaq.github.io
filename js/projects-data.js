@@ -17,7 +17,7 @@
      oneLiner     Short hook shown on the card and under the detail title
      description  Full write-up. Either one string (separate paragraphs with a
                   blank line) or an array of paragraph strings
-     techStack    Array of tool / language names
+     techStack    Array of tool / language names (dot colours: TECH_DOMAINS)
      thumbnail    Image path relative to the site root, e.g.
                   "assets/projects/my-project.jpg" (or a full https:// URL)
      thumbnailAlt Alt text for the thumbnail
@@ -36,13 +36,34 @@
    ========================================================================== */
 
 /* Categories drive the filter row, in this order. `id` is what projects
-   reference in their `categories` array; `label` is what's displayed. */
+   reference in their `categories` array; `label` is what's displayed.
+   `color` is used for the category's dots, card stripe and filter underline:
+   one of the --cat-* tokens in css/style.css, or any CSS colour ("#E07A7A"). */
 const PROJECT_CATEGORIES = [
-  { id: "computer-vision", label: "Computer Vision" },
-  { id: "robotics", label: "Robotics & Autonomy" },
-  { id: "ml-software", label: "ML/Software" },
-  { id: "mechanical", label: "Mechanical" },
+  { id: "computer-vision", label: "Computer Vision", color: "var(--cat-cv)" },
+  { id: "robotics", label: "Robotics & Autonomy", color: "var(--cat-robotics)" },
+  { id: "ml-software", label: "ML/Software", color: "var(--cat-ml)" },
+  { id: "mechanical", label: "Mechanical", color: "var(--cat-mech)" },
 ];
+
+/* Colours the dot next to each tool in a project's tech stack by mapping the
+   tool name (exactly as written in `techStack`) to a category id above.
+   Tools not listed here get a neutral grey dot. */
+const TECH_DOMAINS = {
+  "OpenCV": "computer-vision",
+  "PyTorch": "ml-software",
+  "TensorRT": "ml-software",
+  "Albumentations": "ml-software",
+  "FastAPI": "ml-software",
+  "ROS 2": "robotics",
+  "NVIDIA Jetson": "robotics",
+  "evo": "robotics",
+  "SolidWorks": "mechanical",
+  "Fusion 360": "mechanical",
+  "FEA": "mechanical",
+  "3D printing": "mechanical",
+  "CNC machining": "mechanical",
+};
 
 const PROJECTS = [
   /* PLACEHOLDER — multi-tag project, all three link types, mixed media

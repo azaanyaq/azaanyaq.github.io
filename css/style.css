@@ -12,6 +12,14 @@
   --accent: #4DA8DA;
   --border: #25282C;
   --border-strong: #363A40; /* hover state for hairlines */
+  --tick: #4A4F56;          /* corner marks and divider ticks */
+
+  /* Category colours. Referenced from js/projects-data.js. Used only for
+     small marks (dots, stripes, underlines), never for body text. */
+  --cat-cv: #4DA8DA;
+  --cat-robotics: #5FB88A;
+  --cat-ml: #A48BE0;
+  --cat-mech: #E0A45A;
 
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -140,6 +148,44 @@ button {
   padding-inline: var(--gutter);
 }
 
+/* Small square colour marks for categories / domains. Colour comes from
+   --cat, set inline by the page or by js/projects.js. */
+.dot,
+.tags li::before,
+.stack-list li::before,
+.skill-group h3::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  vertical-align: 0.15em;
+  background: var(--cat, var(--muted));
+}
+
+/* Crop-mark corners drawn just outside an element's box. */
+.corner-marks {
+  position: relative;
+}
+
+.corner-marks::before {
+  --mark: var(--tick);
+  content: "";
+  position: absolute;
+  inset: -7px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--mark), var(--mark)) top left / 10px 1px,
+    linear-gradient(var(--mark), var(--mark)) top left / 1px 10px,
+    linear-gradient(var(--mark), var(--mark)) top right / 10px 1px,
+    linear-gradient(var(--mark), var(--mark)) top right / 1px 10px,
+    linear-gradient(var(--mark), var(--mark)) bottom left / 10px 1px,
+    linear-gradient(var(--mark), var(--mark)) bottom left / 1px 10px,
+    linear-gradient(var(--mark), var(--mark)) bottom right / 10px 1px,
+    linear-gradient(var(--mark), var(--mark)) bottom right / 1px 10px;
+  background-repeat: no-repeat;
+}
+
 .skip-link {
   position: absolute;
   top: 8px;
@@ -177,10 +223,29 @@ button {
 }
 
 .site-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: var(--text);
   font-weight: 500;
   letter-spacing: -0.01em;
 }
+
+.site-mark {
+  display: grid;
+  grid-template-columns: repeat(2, 5px);
+  gap: 2px;
+}
+
+.site-mark span {
+  width: 5px;
+  height: 5px;
+}
+
+.site-mark span:nth-child(1) { background: var(--cat-cv); }
+.site-mark span:nth-child(2) { background: var(--cat-robotics); }
+.site-mark span:nth-child(3) { background: var(--cat-ml); }
+.site-mark span:nth-child(4) { background: var(--cat-mech); }
 
 .site-name:hover {
   text-decoration: none;
@@ -235,6 +300,7 @@ main {
 }
 
 .section {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
   gap: 24px 48px;
@@ -242,8 +308,36 @@ main {
   border-top: 1px solid var(--border);
 }
 
+/* End ticks on the divider, like a dimension line: ├────┤ */
+.section::before,
+.section::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  width: 1px;
+  height: 9px;
+  background: var(--tick);
+}
+
+.section::before {
+  left: 0;
+}
+
+.section::after {
+  right: 0;
+}
+
 .section-title {
   font-size: 18px;
+}
+
+.section-num {
+  margin-right: 12px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .site-footer {
@@ -272,11 +366,34 @@ main {
 /* ---------- About: hero ---------- */
 
 .hero {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   gap: 32px clamp(32px, 5vw, 64px);
   padding-block: clamp(56px, 10vw, 128px);
+}
+
+/* Faint blueprint grid behind the hero, faded out towards the edges. */
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 calc(-1 * var(--gutter));
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.7;
+  -webkit-mask-image: radial-gradient(ellipse 60% 80% at 25% 45%, #000 20%, transparent 80%);
+  mask-image: radial-gradient(ellipse 60% 80% at 25% 45%, #000 20%, transparent 80%);
+  pointer-events: none;
+}
+
+.hero-photo-frame {
+  align-self: start;
+  justify-self: start;
 }
 
 .hero-photo {
@@ -306,11 +423,22 @@ main {
   margin-top: 12px;
 }
 
-.hero-meta {
+.hero-status {
   margin-top: 24px;
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 13px;
+}
+
+.hero-status::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 10px;
+  vertical-align: 0.1em;
+  border-radius: 50%;
+  background: var(--cat-robotics);
 }
 
 /* ---------- About: skills ---------- */
@@ -344,6 +472,11 @@ main {
 
 .timeline-item:last-child {
   padding-bottom: 0;
+}
+
+.timeline-item.is-current::before {
+  background: var(--cat-robotics);
+  border-color: var(--cat-robotics);
 }
 
 .timeline-item::before {
@@ -419,7 +552,7 @@ main {
   right: 0;
   bottom: 0;
   height: 2px;
-  background: var(--accent);
+  background: var(--cat, var(--accent));
 }
 
 .filter:focus-visible {
@@ -463,6 +596,25 @@ main {
 .card:has(.card-link:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+.card:hover::before {
+  --mark: var(--card-cat, var(--muted));
+}
+
+.card-stripe,
+.detail-stripe {
+  display: flex;
+  height: 2px;
+}
+
+.card-stripe {
+  flex: none;
+}
+
+.card-stripe span,
+.detail-stripe span {
+  flex: 1;
 }
 
 .card-media {
@@ -542,6 +694,10 @@ main {
   font-size: 12px;
 }
 
+.tags li::before {
+  margin-right: 6px;
+}
+
 /* ---------- Projects: detail overlay ---------- */
 
 .detail {
@@ -594,6 +750,13 @@ main {
   justify-content: flex-end;
   padding: 12px clamp(12px, 2vw, 20px);
   background: var(--surface);
+}
+
+.detail-stripe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .detail-close {

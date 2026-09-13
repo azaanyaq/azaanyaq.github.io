@@ -18,7 +18,7 @@
   <header class="site-header">
     <nav class="site-nav container" aria-label="Main">
       <!-- PLACEHOLDER: your name -->
-      <a class="site-name" href="./">Your Name</a>
+      <a class="site-name" href="./"><span class="site-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>Your Name</a>
       <ul class="nav-links">
         <li><a href="./" aria-current="page">About</a></li>
         <li><a href="projects/">Projects</a></li>
@@ -36,7 +36,9 @@
       <!-- ===================== Hero ===================== -->
       <section class="hero" aria-labelledby="hero-title">
         <!-- PLACEHOLDER: profile photo. Add e.g. assets/img/profile.jpg and update src + alt -->
-        <img class="hero-photo" src="assets/img/profile-placeholder.svg" width="184" height="184" alt="Portrait of Your Name (placeholder)">
+        <div class="hero-photo-frame corner-marks">
+          <img class="hero-photo" src="assets/img/profile-placeholder.svg" width="184" height="184" alt="Portrait of Your Name (placeholder)">
+        </div>
         <div>
           <!-- PLACEHOLDER: identity line -->
           <h1 class="hero-title" id="hero-title">I build perception systems that help robots understand and move through the real world.</h1>
@@ -45,17 +47,17 @@
             <p>Placeholder bio. I'm an engineer working at the intersection of computer vision, machine learning and robotics, with a focus on getting perception out of the lab and onto hardware that has to work outdoors.</p>
             <p>Most recently I've worked on stereo depth, sensor fusion and mechanical design for field robots. I like problems where the software and the physical system have to be designed together.</p>
           </div>
-          <!-- PLACEHOLDER: location / availability -->
-          <p class="hero-meta">City, Country · Open to robotics and perception roles</p>
+          <!-- PLACEHOLDER: status line (what you're working on right now) + location -->
+          <p class="hero-status">Currently building stereo perception at Example Robotics · City, Country</p>
         </div>
       </section>
 
       <!-- ===================== Skills ===================== -->
       <section class="section" aria-labelledby="skills-title">
-        <h2 class="section-title" id="skills-title">Skills</h2>
+        <h2 class="section-title" id="skills-title"><span class="section-num" aria-hidden="true">01</span>Skills</h2>
         <!-- PLACEHOLDER: skill groups. Add or remove .skill-group blocks freely -->
         <div class="skills">
-          <div class="skill-group">
+          <div class="skill-group" style="--cat: var(--cat-cv)">
             <h3>Computer Vision &amp; ML</h3>
             <ul>
               <li>Stereo and monocular depth</li>
@@ -65,7 +67,7 @@
               <li>TensorRT deployment</li>
             </ul>
           </div>
-          <div class="skill-group">
+          <div class="skill-group" style="--cat: var(--cat-robotics)">
             <h3>Robotics &amp; Autonomy</h3>
             <ul>
               <li>ROS 2</li>
@@ -75,7 +77,7 @@
               <li>Embedded Linux, Jetson</li>
             </ul>
           </div>
-          <div class="skill-group">
+          <div class="skill-group" style="--cat: var(--cat-mech)">
             <h3>Mechanical Design</h3>
             <ul>
               <li>SolidWorks, Fusion 360</li>
@@ -89,10 +91,10 @@
 
       <!-- ===================== Experience ===================== -->
       <section class="section" aria-labelledby="experience-title">
-        <h2 class="section-title" id="experience-title">Experience</h2>
+        <h2 class="section-title" id="experience-title"><span class="section-num" aria-hidden="true">02</span>Experience</h2>
         <!-- PLACEHOLDER: experience entries, most recent first. Copy an <li> to add one -->
         <ol class="timeline">
-          <li class="timeline-item">
+          <li class="timeline-item is-current">
             <h3 class="timeline-role">Perception Engineer <span class="timeline-org">· Example Robotics Co.</span></h3>
             <span class="timeline-dates">2024 – Present</span>
             <p class="timeline-desc">Placeholder. Building the stereo perception stack for an outdoor mobile robot, from calibration through to the obstacle map used by the planner.</p>

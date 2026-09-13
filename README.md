@@ -32,7 +32,7 @@ grep -rn "PLACEHOLDER" --include="*.html" --include="*.js" .
 
 Add one object to the `PROJECTS` array in `js/projects-data.js`. You don't need to touch any HTML or CSS. Only `id` and `title` are required, and fields you leave out don't render. The full list of fields is documented at the top of that file.
 
-To add a **new category**, add it to `PROJECT_CATEGORIES`. The filter row updates automatically.
+To add a **new category**, add it to `PROJECT_CATEGORIES`. The filter row updates automatically. Give it a `color` (one of the `--cat-*` tokens in `css/style.css`, or any CSS colour) for its dots, card stripe and filter underline. Tech-stack dot colours come from `TECH_DOMAINS` in the same file.
 
 To support a **new kind of field** (a new media type, link type or metadata block), edit the extension points at the top of `js/projects.js`:
 
