@@ -24,7 +24,7 @@ grep -rn "PLACEHOLDER" --include="*.html" --include="*.js" .
 
 - **Name, bio, identity line, skills, experience:** `index.html`
 - **Name, LinkedIn URL, email:** the nav and footer in `index.html`, `projects/index.html` and `404.html`
-- **CV:** replace `assets/cv/cv.pdf`
+- **CV:** replace `assets/cv/Azaan-Yaqub-CV.pdf`
 - **Profile photo:** add your image under `assets/img/` and update the `<img>` in `index.html`
 - **Projects:** `js/projects-data.js`
 
