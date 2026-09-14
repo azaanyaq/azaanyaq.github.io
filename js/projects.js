@@ -3,7 +3,7 @@
 
    Reads PROJECT_CATEGORIES and PROJECTS from js/projects-data.js and builds
    the filter row, the card grid and the detail overlay. You shouldn't need
-   to touch this file to add projects — only to add new *kinds* of fields.
+   to touch this file to add projects - only to add new *kinds* of fields.
 
    Extension points (all near the top of this file):
      LINK_TYPES       labels + order for action buttons
@@ -63,15 +63,29 @@
 
   // Detail view layout. `area` is "header", "main" or "aside". A field is
   // skipped entirely when the project doesn't have it (or it's empty).
+  // Optional `value(project)` builds the value from several project fields
+  // instead of reading `project[key]`.
   const DETAIL_FIELDS = [
     { key: "title", area: "header", render: (v) => h("h2", { class: "detail-title", id: "detail-title" }, v) },
     { key: "oneLiner", area: "header", render: (v) => h("p", { class: "detail-lede" }, v) },
     { key: "categories", area: "header", render: (v) => renderTags(v) },
     { key: "links", area: "header", render: (v) => renderLinks(v) },
-    { key: "description", area: "main", render: (v) => renderDescription(v) },
+    { key: "note", area: "header", render: (v) => h("p", { class: "detail-note" }, v) },
+    { key: "description", area: "main", render: (v, p) => renderDescription(v, p) },
     { key: "media", area: "main", render: (v, p) => renderMedia(v, p) },
-    { key: "techStack", area: "aside", render: (v) => renderTechStack(v) },
-    { key: "meta", area: "aside", render: (v) => renderMeta(v) },
+    { key: "techStack", area: "aside", render: (v, p) => renderTechStack(v, p) },
+    {
+      key: "details",
+      area: "aside",
+      value: (p) => ({
+        Status: p.status ? renderStatus(p.status, null, false) : null,
+        Year: p.year,
+        Role: p.role,
+        Team: p.team,
+        ...(p.meta || {}),
+      }),
+      render: (v) => renderMeta(v),
+    },
   ];
 
   /* ---------- Setup ---------- */
@@ -80,6 +94,9 @@
   const projects = typeof PROJECTS !== "undefined" ? PROJECTS : [];
   const techDomains = typeof TECH_DOMAINS !== "undefined" ? TECH_DOMAINS : {};
   const categoriesById = new Map(categories.map((c) => [c.id, c]));
+  const statusesById = new Map(
+    (typeof PROJECT_STATUSES !== "undefined" ? PROJECT_STATUSES : []).map((s) => [s.id, s])
+  );
   const projectsById = new Map();
   projects.forEach((p) => {
     if (!p || !p.id || !p.title) return console.warn("Project is missing an id or title:", p);
@@ -134,6 +151,7 @@
 
   function isEmpty(value) {
     if (value == null || value === "") return true;
+    if (value instanceof Node) return false;
     if (Array.isArray(value)) return value.length === 0;
     if (typeof value === "object") return Object.keys(value).length === 0;
     return false;
@@ -151,6 +169,18 @@
   function categoryColor(id) {
     const category = categoriesById.get(id);
     return (category && category.color) || "var(--muted)";
+  }
+
+  // Status label with a coloured dot. Unknown ids still render, with a grey dot.
+  // `labelled` adds a screen-reader-only "Status:" prefix, for places with no visible label.
+  function renderStatus(id, className, labelled = true) {
+    const status = statusesById.get(id);
+    return h(
+      "span",
+      { class: "status" + (className ? " " + className : ""), style: `--status: ${(status && status.color) || "var(--muted)"}` },
+      labelled ? h("span", { class: "visually-hidden" }, "Status: ") : null,
+      (status && status.label) || titleCase(id)
+    );
   }
 
   // One solid segment per category, used for the card and detail stripes.
@@ -184,46 +214,62 @@
       const url = typeof entry === "string" ? entry : entry.url;
       if (!url) return null;
       const label = (typeof entry === "object" && entry.label) || (LINK_TYPES[key] && LINK_TYPES[key].label) || titleCase(key);
-      const external = isExternal(url);
+      // External links and PDFs open in a new tab so the project view stays open.
+      const newTab = isExternal(url) || /\.pdf($|[?#])/i.test(url);
       return h(
         "a",
-        { class: "button", href: asset(url), target: external ? "_blank" : null, rel: external ? "noopener" : null },
+        { class: "button", href: asset(url), target: newTab ? "_blank" : null, rel: newTab ? "noopener" : null },
         label,
-        external ? h("span", { class: "external-mark", "aria-hidden": "true" }, "↗") : null,
-        external ? h("span", { class: "visually-hidden" }, " (opens in a new tab)") : null
+        newTab ? h("span", { class: "external-mark", "aria-hidden": "true" }, "↗") : null,
+        newTab ? h("span", { class: "visually-hidden" }, " (opens in a new tab)") : null
       );
     });
     const valid = buttons.filter(Boolean);
     return valid.length ? h("div", { class: "detail-actions" }, valid) : null;
   }
 
-  function renderDescription(value) {
-    const paragraphs = (Array.isArray(value) ? value : String(value).split(/\n\s*\n/))
-      .map((p) => p.trim())
-      .filter(Boolean);
-    return h("div", { class: "prose" }, paragraphs.map((p) => h("p", null, p)));
+  // Paragraph strings, with optional media objects ({ type, src, caption, ... })
+  // placed between them to show an image or video inside the write-up.
+  function renderDescription(value, project) {
+    const blocks = Array.isArray(value) ? value : String(value).split(/\n\s*\n/);
+    return h(
+      "div",
+      { class: "prose" },
+      blocks.map((block) => {
+        if (block && typeof block === "object") return renderMediaItem(block, project);
+        const text = String(block).trim();
+        return text ? h("p", null, text) : null;
+      })
+    );
+  }
+
+  function renderMediaItem(item, project) {
+    const render = MEDIA_RENDERERS[item && item.type];
+    if (!render) {
+      console.warn(`No renderer for media type "${item && item.type}" in project "${project.id}"`);
+      return null;
+    }
+    const node = render(item, project);
+    if (!node) return null;
+    return h("figure", { class: "media-item" }, node, item.caption ? h("figcaption", null, item.caption) : null);
   }
 
   function renderMedia(items, project) {
-    const figures = items.map((item) => {
-      const render = MEDIA_RENDERERS[item && item.type];
-      if (!render) {
-        console.warn(`No renderer for media type "${item && item.type}" in project "${project.id}"`);
-        return null;
-      }
-      const node = render(item, project);
-      if (!node) return null;
-      return h("figure", { class: "media-item" }, node, item.caption ? h("figcaption", null, item.caption) : null);
-    });
-    const valid = figures.filter(Boolean);
+    const valid = items.map((item) => renderMediaItem(item, project)).filter(Boolean);
     return valid.length ? h("div", { class: "media-list" }, valid) : null;
   }
 
-  function renderTechStack(stack) {
+  function renderTechStack(stack, project) {
+    const note = project && project.techStackNote;
     return h(
       "section",
       { "aria-labelledby": "detail-stack-title" },
-      h("h3", { class: "aside-title", id: "detail-stack-title" }, "Tech stack"),
+      h(
+        "div",
+        { class: "aside-heading" },
+        h("h3", { class: "aside-title", id: "detail-stack-title" }, "Tech stack"),
+        note ? h("span", { class: "aside-note" }, note) : null
+      ),
       h(
         "ul",
         { class: "stack-list" },
@@ -240,7 +286,7 @@
       h(
         "dl",
         { class: "meta-list" },
-        Object.entries(meta).map(([label, value]) => h("div", null, h("dt", null, label), h("dd", null, String(value))))
+        Object.entries(meta).map(([label, value]) => h("div", null, h("dt", null, label), h("dd", null, value instanceof Node ? value : String(value))))
       )
     );
   }
@@ -288,9 +334,13 @@
   }
 
   function renderCard(project) {
-    const media = project.thumbnail
-      ? h("img", { src: asset(project.thumbnail), alt: project.thumbnailAlt || "", loading: "lazy" })
-      : h("div", { class: "media-fallback", "aria-hidden": "true" }, "No image");
+    const fallback = () => h("div", { class: "media-fallback", "aria-hidden": "true" }, "No image");
+    let media = fallback();
+    if (project.thumbnail) {
+      media = h("img", { src: asset(project.thumbnail), alt: project.thumbnailAlt || "", loading: "lazy" });
+      // A missing or mistyped image path shows the plain box rather than a broken image.
+      media.addEventListener("error", () => media.replaceWith(fallback()), { once: true });
+    }
 
     const ids = project.categories || [];
     return h(
@@ -304,7 +354,7 @@
           style: ids.length ? `--card-cat: ${categoryColor(ids[0])}` : null,
         },
         ids.length ? h("div", { class: "card-stripe", "aria-hidden": "true" }, stripeSegments(ids)) : null,
-        h("div", { class: "card-media" }, media),
+        h("div", { class: "card-media" }, media, project.status ? renderStatus(project.status, "card-status") : null),
         h(
           "div",
           { class: "card-body" },
@@ -330,7 +380,10 @@
   function renderDetail(project) {
     const areas = { header: [], main: [], aside: [] };
     for (const field of DETAIL_FIELDS) {
-      const value = project[field.key];
+      let value = field.value ? field.value(project) : project[field.key];
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        value = Object.fromEntries(Object.entries(value).filter(([, v]) => !isEmpty(v)));
+      }
       if (isEmpty(value)) continue;
       const node = field.render(value, project);
       if (node) (areas[field.area] || areas.main).push(node);

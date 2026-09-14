@@ -1,11 +1,12 @@
 /* ==========================================================================
-   PROJECT DATA — the only file you need to edit to add or change projects.
+   PROJECT DATA - the only file you need to edit to add or change projects.
 
    Everything on the Projects page (filters, grid, detail view) is rendered
-   from the two lists below. To add a project, copy one of the objects in
+   from the lists below. To add a project, copy one of the objects in
    PROJECTS and edit it. No HTML or CSS changes are needed.
 
-   All entries below are PLACEHOLDER / EXAMPLE content. Replace them.
+   Thumbnails live in assets/projects/. A 4:3 image (e.g. 1200x900) fits the
+   card without cropping.
 
    ---------------------------------------------------------------------------
    Project fields (only `id` and `title` are required; leave out anything that
@@ -14,22 +15,34 @@
      id           URL slug, unique. Used for the shareable link /projects/<id>
      title        Project name
      categories   Array of category ids from PROJECT_CATEGORIES (multi-tag OK)
+     status       One id from PROJECT_STATUSES: "completed", "updating" or
+                  "in-progress". Shown as a badge on the card and in Details
      oneLiner     Short hook shown on the card and under the detail title
      description  Full write-up. Either one string (separate paragraphs with a
-                  blank line) or an array of paragraph strings
+                  blank line) or an array of paragraph strings. In the array
+                  form, a media object ({ type: "image", src, alt, caption })
+                  between two strings shows that image inside the write-up
      techStack    Array of tool / language names (dot colours: TECH_DOMAINS)
+     techStackNote
+                  Short label next to the "Tech stack" heading,
+                  e.g. "Subject to change" for in-progress projects
      thumbnail    Image path relative to the site root, e.g.
-                  "assets/projects/my-project.jpg" (or a full https:// URL)
+                  "assets/projects/my-project.jpg" (or a full https:// URL).
+                  If the file is missing, the card shows a plain "No image" box
      thumbnailAlt Alt text for the thumbnail
      links        Object of { type: url }. Built-in labels: code, demo,
                   report, paper, video. Any other key still works and is
                   labelled from its name, or pass { url, label } to set the
-                  button text yourself
+                  button text yourself. Empty {} renders no buttons
+     note         Short disclaimer shown under the title area in the detail
+                  view, e.g. why there's no public code
      media        Array of { type, src, caption?, alt?, title?, poster? }
                   Built-in types: "image", "video", "embed" (iframe: YouTube,
-                  Vimeo, interactive demos)
-     meta         Object of label -> value shown in the sidebar,
-                  e.g. { Year: "2025", Role: "Perception lead" }
+                  Vimeo, interactive demos). Empty [] renders nothing
+     year, role, team
+                  Shown in the "Details" sidebar
+     meta         Extra label -> value pairs for the "Details" sidebar,
+                  e.g. { Client: "PwC", Duration: "10 weeks" }
 
    New field types are added in js/projects.js (see DETAIL_FIELDS,
    LINK_TYPES and MEDIA_RENDERERS near the top of that file).
@@ -41,151 +54,260 @@
    one of the --cat-* tokens in css/style.css, or any CSS colour ("#E07A7A"). */
 const PROJECT_CATEGORIES = [
   { id: "computer-vision", label: "Computer Vision", color: "var(--cat-cv)" },
-  { id: "robotics", label: "Robotics & Autonomy", color: "var(--cat-robotics)" },
+  { id: "robotics-autonomy", label: "Robotics & Autonomy", color: "var(--cat-robotics)" },
   { id: "ml-software", label: "ML/Software", color: "var(--cat-ml)" },
   { id: "mechanical", label: "Mechanical", color: "var(--cat-mech)" },
 ];
 
+/* Project statuses. `color` is the badge dot: one of the --status-* tokens
+   in css/style.css, or any CSS colour. */
+const PROJECT_STATUSES = [
+  { id: "completed", label: "Completed", color: "var(--status-completed)" },
+  { id: "updating", label: "Updating", color: "var(--status-updating)" },
+  { id: "in-progress", label: "In Progress", color: "var(--status-in-progress)" },
+];
+
 /* Colours the dot next to each tool in a project's tech stack by mapping the
    tool name (exactly as written in `techStack`) to a category id above.
-   Tools not listed here get a neutral grey dot. */
+   Tools not listed here (e.g. Python) get a neutral grey dot. */
 const TECH_DOMAINS = {
+  // Computer vision
   "OpenCV": "computer-vision",
+  "YOLO": "computer-vision",
+  "YOLO26": "computer-vision",
+  "DeepFace": "computer-vision",
+  "MediaPipe": "computer-vision",
+  "CNN-based Tracking": "computer-vision",
+
+  // ML / software
   "PyTorch": "ml-software",
-  "TensorRT": "ml-software",
-  "Albumentations": "ml-software",
+  "NumPy": "ml-software",
   "FastAPI": "ml-software",
-  "ROS 2": "robotics",
-  "NVIDIA Jetson": "robotics",
-  "evo": "robotics",
+  "Next.js": "ml-software",
+  "TypeScript": "ml-software",
+  "PostgreSQL": "ml-software",
+  "Azure Blob Storage": "ml-software",
+  "Nginx": "ml-software",
+  "WebSockets": "ml-software",
+  "PyPI Packaging": "ml-software",
+  "Matplotlib": "ml-software",
+  "Jupyter": "ml-software",
+
+  // Robotics, autonomy & deployment
+  "ROS 2": "robotics-autonomy",
+  "ROS-style IPC": "robotics-autonomy",
+  "NVIDIA Jetson": "robotics-autonomy",
+  "Docker Compose": "robotics-autonomy",
+  "systemd": "robotics-autonomy",
+  "Kalman Filters": "robotics-autonomy",
+  "Sensor Fusion": "robotics-autonomy",
+  "iOS Sensor Logging": "robotics-autonomy",
+
+  // Mechanical
   "SolidWorks": "mechanical",
-  "Fusion 360": "mechanical",
-  "FEA": "mechanical",
-  "3D printing": "mechanical",
-  "CNC machining": "mechanical",
+  "CNC Machining": "mechanical",
+  "GD&T": "mechanical",
+  "FMEA": "mechanical",
+  "DFM": "mechanical",
+  "Psychrometric Analysis": "mechanical",
 };
 
 const PROJECTS = [
-  /* PLACEHOLDER — multi-tag project, all three link types, mixed media
-     including an embedded video */
   {
-    id: "stereo-depth-rover",
-    title: "Stereo Depth Perception for a Field Rover",
-    categories: ["computer-vision", "robotics"],
-    oneLiner: "Real-time stereo depth and obstacle mapping on an embedded GPU.",
+    id: "imperial-auv",
+    title: "Imperial AUV - Autonomous AUV Drones",
+    categories: ["robotics-autonomy", "computer-vision"],
+    status: "in-progress",
+    oneLiner: "Co-founding Imperial's first AUV society and prototyping perception and autonomy for a 5-vehicle underwater mapping swarm.",
     description: [
-      "PLACEHOLDER write-up. A small outdoor rover needed to navigate uneven terrain without a LiDAR, so the goal was to get a usable obstacle map from a low-cost stereo camera running entirely on-board.",
-      "The pipeline rectifies the stereo pair, computes a disparity map with a lightweight learned matcher, and projects valid points into a rolling 2.5D elevation grid that the local planner consumes at 15 Hz. Most of the work went into calibration drift, filtering sky and reflective surfaces, and keeping latency predictable on a Jetson-class board.",
-      "In field tests the rover completed a 400 m course with no collisions. The main limitations were low-texture ground and direct sunlight, which the write-up discusses along with ideas for fusing wheel odometry to stabilise the map.",
-    ],
-    techStack: ["Python", "C++", "ROS 2", "OpenCV", "PyTorch", "TensorRT", "NVIDIA Jetson"],
-    thumbnail: "assets/projects/stereo-depth-rover.svg",
-    thumbnailAlt: "Placeholder thumbnail for the stereo depth rover project",
-    links: {
-      code: "https://github.com/your-username/stereo-depth-rover",
-      demo: "https://example.com/stereo-depth-rover-demo",
-      report: "https://example.com/stereo-depth-rover-report.pdf",
-    },
-    media: [
-      {
-        type: "embed",
-        src: "https://www.youtube-nocookie.com/embed/VIDEO_ID",
-        title: "Rover field test video",
-        caption: "Placeholder embed. Swap VIDEO_ID for a real YouTube video ID.",
-      },
+      `Imperial AUV is Imperial College London's first Autonomous Underwater Vehicle society, which I co-founded and which now has 5+ members. The long-term goal is a swarm of five vehicles that communicate with each other and run synchronised bathymetric surveys to map lakes and rivers.`,
+      `The design targets are a 3 m operating depth and 10-20 cm mapping resolution. These are goals for the finished system rather than results yet, and this page will be updated as the prototypes are built and tested.`,
+      `I lead perception and autonomy, where I am responsible for the perception algorithms and software implementation; however, I contribute to all aspects of the project's design.`,
+      `The project is currently in the prototyping phase: we're procuring all the parts needed and have begun to assemble some of the 3D printed modules.`,
       {
         type: "image",
-        src: "assets/projects/media-placeholder.svg",
-        alt: "Placeholder for a disparity map next to the source camera frame",
-        caption: "Disparity output alongside the left camera frame (placeholder image).",
+        src: "assets/projects/imperial-auv-modules.jpg",
+        alt: "Two assembled 3D printed hull modules for the AUV on a workbench, with a black ducted thruster fitted in the side of one module",
+        caption: "Early assembly of the 3D printed hull modules, with a thruster fitted.",
       },
     ],
-    meta: {
-      Year: "2025",
-      Role: "Perception lead",
-      Team: "4 people",
-    },
+    techStack: ["OpenCV", "CNN-based Tracking", "ROS 2"],
+    techStackNote: "Subject to change",
+    thumbnail: "assets/projects/imperial-auv-thumb.jpg",
+    thumbnailAlt: "CAD render of the Imperial AUV: a torpedo-shaped underwater vehicle with a rear thruster, fins and a cutaway hull section",
+    links: {},
+    media: [],
+    role: "Co-founder & Head of Automation",
+    team: "5+ members",
   },
-
-  /* PLACEHOLDER — multi-tag project with a single link type (code only) */
   {
-    id: "surface-defect-detection",
-    title: "Surface Defect Detection",
+    id: "telebot",
+    title: "Telebot - Perception & Teleoperation for a Robotic Arm",
+    categories: ["computer-vision", "robotics-autonomy"],
+    status: "completed",
+    oneLiner: "Real-time person-tracking and teleoperation for a 6-DOF robotic arm, deployed on edge hardware.",
+    description: `Built at PwC's Frontier Labs, Telebot is an edge-to-cloud robotic arm system. A Jetson-mounted camera runs YOLO object detection at ~15 FPS, feeding a PD-controlled visual servo loop that lets a 6-DOF arm track and follow a person autonomously, with hold-on-fault safety if detection drops out.
+
+The vision and motor-control code run as two isolated Python runtimes communicating over IPC, so a fault in perception can't take down hardware control. The whole stack is deployed via Docker Compose and systemd, with Nginx/TLS handling a live encrypted WebSocket video stream to 10+ concurrent viewers at sub-30ms latency, and live mode-switching between autonomous tracking and manual teleoperation.
+
+The system was paired with Meta Ray-Ban smart glasses for a first-person teleoperation demo, showcased to 1,000+ attendees at a week-long Department of Government Enablement event in Abu Dhabi, and presented directly to visiting government officials.`,
+    techStack: ["Python", "PyTorch", "YOLO", "ROS-style IPC", "Docker Compose", "Nginx", "systemd", "NVIDIA Jetson", "WebSockets"],
+    thumbnail: "assets/projects/telebot-thumb.jpg",
+    thumbnailAlt: "Two robotic arms on a desk beside a control box with a screen and a six-button control keypad, one arm being moved by hand",
+    links: {
+      // proprietary PwC work - no public code. Leave empty unless you get a demo video/report cleared to share.
+    },
+    media: [
+      // e.g. { type: "video", src: "assets/projects/telebot-demo.mp4", caption: "First-person teleop demo, DGE Abu Dhabi" }
+    ],
+    year: "2026",
+    role: "Mechatronics & CV Intern",
+    team: "PwC Frontier Labs",
+    note: "All code for this project is under NDA and is not accessible to me.",
+  },
+  {
+    id: "visionhub",
+    title: "VisionHub - Multi-Model Computer Vision Platform",
     categories: ["computer-vision", "ml-software"],
-    oneLiner: "A small-data defect classifier for machined aluminium parts.",
-    description:
-      "PLACEHOLDER write-up. Inspection on a production line was manual and inconsistent, and only a few hundred labelled defect images existed.\n\n" +
-      "I built a segmentation model on a pretrained backbone with heavy synthetic augmentation, then wrapped it in a small inference service with a review UI so operators could correct predictions and grow the dataset over time.\n\n" +
-      "The final model reached high recall on held-out parts while keeping false rejects low enough to be useful on the line.",
-    techStack: ["Python", "PyTorch", "Albumentations", "FastAPI", "Docker"],
-    thumbnail: "assets/projects/surface-defect-detection.svg",
-    thumbnailAlt: "Placeholder thumbnail for the surface defect detection project",
-    links: {
-      code: "https://github.com/your-username/surface-defect-detection",
-    },
-    meta: {
-      Year: "2024",
-    },
-  },
+    status: "completed",
+    oneLiner: "A hub-and-worker CV platform routing live video to isolated facial recognition, detection, and tracking models.",
+    description: `VisionHub is a real-time computer vision platform built around a hub-and-worker architecture: a Next.js/FastAPI hub dispatches live video frames to isolated ML workers, each running in its own process with self-registering health checks that distinguish a crashed worker from one that's simply timing out.
 
-  /* PLACEHOLDER — mechanical + robotics, no links at all, image-only media */
+I led the facial recognition pipeline using DeepFace - live enrolment with quality gates, 512-dimension ArcFace embeddings matched via cosine similarity, and a verification flow with live emotion/attribute analysis - hitting 90% accuracy across 10+ users. I then extended this into CCTV attendance tracking, with present/absent/indeterminate logging designed specifically to avoid misreading degraded footage as "absent."
+
+Alongside this, the platform runs multi-object detection and tracking with YOLO, including class-aware tracking for people vs. vehicles in traffic monitoring, and a dedicated model for PPE compliance detection with a persisted violation archive backed by PostgreSQL and Azure Blob Storage.`,
+    techStack: ["Python", "FastAPI", "Next.js", "TypeScript", "DeepFace", "YOLO26", "MediaPipe", "PostgreSQL", "Azure Blob Storage"],
+    thumbnail: "assets/projects/visionhub-thumb.jpg",
+    thumbnailAlt: "VisionHub interface: a central camera hub linked to waste classification, traffic detection, safety compliance, creative experience and facial recognition modules",
+    links: {
+      // proprietary PwC work - no public code
+    },
+    media: [],
+    year: "2026",
+    role: "Mechatronics & CV Intern",
+    team: "PwC Frontier Labs",
+    note: "All code for this project is under NDA and is not accessible to me.",
+  },
   {
-    id: "quadruped-leg-module",
-    title: "Quadruped Leg Module",
-    categories: ["mechanical", "robotics"],
-    oneLiner: "A backdrivable, 3-DoF leg designed around a single actuator type.",
+    id: "stepfusion",
+    title: "StepFusion - Pedestrian Dead Reckoning with a Kalman Filter",
+    categories: ["ml-software", "robotics-autonomy"],
+    status: "completed",
+    oneLiner: "GPS-free indoor position tracking from a phone's IMU, fusing gyroscope and magnetometer readings.",
+    description: `StepFusion tracks a walked path indoors with no GPS, using only an iPhone's accelerometer, gyroscope, and magnetometer. Footsteps are detected from accelerometer peaks - validated against a manual count at 156 detected vs. 150 actual steps (~4% error) over a 110-second walk.
+
+A Kalman filter fuses gyroscope and magnetometer readings into a corrected heading, with noise parameters estimated directly from the recorded sensor data rather than guessed. The first design actually underperformed plain gyroscope tracking - tracing this to real magnetic interference in the room (an 8% swing in field strength) led to a redesign that corrects heading only at each footstep instead of every sensor reading.
+
+That redesign cut position error by 12.7% on a long walk (3.64m → 3.18m error), though the same fix doesn't help on shorter walks - a limitation the write-up digs into further.`,
+    techStack: ["Python", "NumPy", "Kalman Filters", "Sensor Fusion", "iOS Sensor Logging"],
+    thumbnail: "assets/projects/stepfusion-thumb.jpg",
+    thumbnailAlt: "Plot of a walked indoor loop comparing raw gyroscope-only tracking with the Kalman-fused path",
+    links: {
+      code: "https://github.com/azaanyaq/step-fusion",
+    },
+    media: [],
+    year: "2026",
+    role: "Solo project",
+  },
+  {
+    id: "edunet",
+    title: "EduNet - A Neural Network Library Built from Scratch",
+    categories: ["ml-software"],
+    status: "updating",
+    oneLiner: "A NumPy-only neural network library with hand-written backprop, gradient checking, and a live training visualiser.",
+    description: `EduNet is a neural network library built entirely from scratch in Python - forward propagation, backpropagation, and gradient descent implemented by hand in NumPy, with no ML framework underneath.
+
+Correctness is verified with gradient checking - comparing analytical gradients against an independent numerical estimate - rather than just trusting a dropping cost curve, with accuracy to 1e-7. The library supports swappable activation and cost functions, and is packaged as a pip-installable Python package on PyPI.
+
+An interactive visualiser lets you watch a network train in real time: decision boundaries forming, gradients flowing through the network diagram, and cost dropping - built as a teaching tool as much as a working library. It's aimed at being updated incrementally with new features over time.`,
+    techStack: ["Python", "NumPy", "PyPI Packaging"],
+    thumbnail: "assets/projects/edunet-thumb.jpg",
+    thumbnailAlt: "EduNet's training visualiser showing a small neural network with positive and negative weights in blue and red",
+    links: {
+      code: "https://github.com/azaanyaq/edunet",
+      // TODO: add your PyPI link. Note pypi.org/project/edunet is a different author's package.
+      // pypi: { url: "https://pypi.org/project/<your-package-name>/", label: "PyPI" },
+    },
+    media: [],
+    year: "2026",
+    role: "Solo project",
+  },
+  {
+    id: "f24-drivetrain",
+    title: "F24 Drivetrain - Design & Manufacture of a 3-Stage Gearbox",
+    categories: ["mechanical"],
+    status: "completed",
+    oneLiner: "Led a 5-person team designing and manufacturing a 3-stage drivetrain for Imperial's F24 kit car.",
+    description: `As Project Manager for Imperial's F24 kit car drivetrain, I led a 5-member team through a 10-week design-to-manufacture project on a 3-stage (chain-gear-chain) drivetrain, achieving a 9.5:1 gear ratio at 20.1 km/h against a 25 km/h speed constraint, on a £300 budget.
+
+I contributed to the SolidWorks CAD modelling and engineering analysis - shaft torsion calculations, gear bending stress via the Lewis form factor method, and bearing life (L10) calculations - and manufactured the drivetrain in-house through CNC machining, turning, milling, and fabrication, using taper-bushed sprockets and CNC-duplicated shafts to cut manufacturing time.
+
+I authored the majority of the technical report, including a full failure mode and effects analysis (FMEA) that identified chain derailment as the highest-priority failure risk - findings that fed directly back into the final design.`,
+    techStack: ["SolidWorks", "CNC Machining", "GD&T", "FMEA", "DFM"],
+    thumbnail: "assets/projects/f24-thumb.jpg",
+    thumbnailAlt: "The Imperial F24 kit car with its drivetrain housing under a clear cover",
+    links: {
+      // no public repo for a manufactured mechanical project - could add a "Report" link if you digitize the technical report
+    },
+    media: [],
+    year: "2025",
+    role: "Project Manager",
+    team: "5 people",
+  },
+  {
+    id: "wave-cloak",
+    title: "Wave Cloak - Finite-Difference Simulation of an Invisibility Cloak",
+    categories: ["ml-software"],
+    status: "completed",
+    oneLiner: "A 2D wave simulation that bends waves around a cloaked object, verified with a hand-written Fourier transform.",
+    // Paragraphs as an array so a figure can sit between them
     description: [
-      "PLACEHOLDER write-up. This was a design study for a modular leg that could be reused across a small quadruped platform, keeping part count and unique components low.",
-      "The leg uses a belt-driven knee to keep mass close to the hip, and a cycloidal reducer that stays backdrivable for compliant contact. I iterated through three printed prototypes before machining the final load-bearing parts.",
-    ],
-    techStack: ["SolidWorks", "FEA", "Fusion 360", "3D printing", "CNC machining"],
-    thumbnail: "assets/projects/quadruped-leg-module.svg",
-    thumbnailAlt: "Placeholder thumbnail for the quadruped leg module project",
-    media: [
+      `Built for Imperial's ME2 Computing coursework, this project simulates an "invisibility cloak" for waves. A sine-wave source sends an electric field across a 4 m by 1.5 m domain towards a reflecting cylinder, which is wrapped in a ring whose wave speed varies with radius - a simplified cloak based on transformation optics (Pendry et al., 2006) that guides the wave around the object so it rejoins on the other side instead of leaving a shadow.`,
+      `The 2D wave equation is solved with an explicit central-difference scheme on a 400 x 150 grid, vectorised with NumPy array slicing rather than loops. The time step is derived from the stability condition and set to 80% of the limit, a special first step handles the at-rest initial condition, and the symmetry about y = 0 is used to simulate only the top half of the domain, halving the computation.`,
+      `To check the cloak behaves physically, a sensor directly behind the object records the field over 1,500 time steps, and a hand-written discrete Fourier transform of the settled signal shows a single clear peak at the 4 Hz source frequency - confirming the cloak redirects the wave without changing its frequency.`,
       {
         type: "image",
-        src: "assets/projects/media-placeholder.svg",
-        alt: "Placeholder for an exploded CAD view of the leg assembly",
-        caption: "Exploded view of the leg assembly (placeholder image).",
+        src: "assets/projects/wave-cloak-sensor.png",
+        alt: "Line plot of wave amplitude at the sensor over 8.5 seconds: flat until about 2.7 s, then small oscillations, then larger steady oscillations from about 5.7 s",
+        caption: "Wave amplitude recorded at the sensor behind the cloak (x = 2.5 m, y = 0 m).",
       },
+      {
+        type: "image",
+        src: "assets/projects/wave-cloak-spectrum.png",
+        alt: "Frequency spectrum of the sensor signal with one sharp peak at 4 Hz, lined up with a dashed line marking the 4 Hz input driver frequency",
+        caption: "Discrete Fourier transform of the sensor signal, peaking at the 4 Hz input frequency.",
+      },
+      `The write-up also covers the model's limitations, including reflections from the domain edges and a grid too coarse to resolve the slow-wave region next to the object.`,
     ],
-    meta: {
-      Year: "2023",
-      Role: "Mechanical design",
-    },
-  },
-
-  /* PLACEHOLDER — single category, shows a non-default link type ("paper") */
-  {
-    id: "visual-slam-benchmark",
-    title: "Visual SLAM Benchmark Suite",
-    categories: ["robotics"],
-    oneLiner: "Reproducible comparisons of open-source visual SLAM systems.",
-    description:
-      "PLACEHOLDER write-up. Comparing SLAM systems is hard because every paper uses different datasets, settings and metrics.\n\n" +
-      "This suite runs several open-source systems in containers against the same sequences, then reports trajectory error, drift and runtime in one consistent format.",
-    techStack: ["C++", "Python", "ROS 2", "Docker", "evo"],
-    thumbnail: "assets/projects/visual-slam-benchmark.svg",
-    thumbnailAlt: "Placeholder thumbnail for the visual SLAM benchmark project",
+    techStack: ["Python", "NumPy", "Matplotlib", "Jupyter", "Finite Differences", "Discrete Fourier Transform"],
+    thumbnail: "assets/projects/wave-cloak-thumb.jpg",
+    thumbnailAlt: "Simulated electric field with red and blue wavefronts bending around a cloaked circular object, with a sensor point behind it",
     links: {
-      code: "https://github.com/your-username/visual-slam-benchmark",
-      paper: "https://example.com/visual-slam-benchmark-paper.pdf",
+      code: "https://github.com/azaanyaq/ME2-computing-cswk",
     },
+    media: [],
+    team: "2 people",
   },
-
-  /* PLACEHOLDER — minimal project: mostly-empty fields, one link type
-     (report). Shows that missing fields simply don't render. */
   {
-    id: "compliant-gripper",
-    title: "Compliant Gripper",
+    id: "ac-lab",
+    title: "AC Lab - Thermodynamic Analysis of an Air Conditioning Unit",
     categories: ["mechanical"],
-    oneLiner: "A single-piece flexure gripper for handling delicate produce.",
-    description:
-      "PLACEHOLDER write-up. A monolithic flexure gripper printed in TPU, tuned so that grip force stays within a safe range across a variety of object sizes.",
-    thumbnail: "assets/projects/compliant-gripper.svg",
-    thumbnailAlt: "Placeholder thumbnail for the compliant gripper project",
+    status: "completed",
+    oneLiner: "Ran experiments on a lab air conditioning unit, then used psychrometrics and energy balances to test its quoted heat transfer rates.",
+    description: [
+      `For Imperial's ME2 Thermofluids lab, we tested whether a Hilton A660 laboratory air conditioning unit actually delivers the heat transfer rates quoted by its manufacturer. The unit conditions an airstream in four stages: steam injection from an electric boiler, an electric preheater, a cooler that removes moisture by condensation, and an electric reheater.`,
+      `Before writing anything up, we ran the unit ourselves at its condition 2 setting (5 kW boiler, 1 kW preheater, 1 kW reheater). We recorded the room temperature and pressure and checked that all four dry bulb thermometers matched the room, confirming the unit started at ambient conditions. Then, every 3 minutes, we read the dry and wet bulb temperatures at all four stages and the pressure drop across the orifice on an inclined manometer, while collecting and measuring the condensate draining from the cooler over the same interval.`,
+      `The practical didn't go perfectly. Early on, we noticed the boiler was visibly leaking steam, so the first readings had to be treated as anomalous and only five valid repeats were left once it was fixed. Spotting this during the lab and accounting for it in the analysis became a key part of the report.`,
+      `I then wrote up the analysis. The average dry and wet bulb temperatures at each stage were converted into specific humidity, relative humidity, specific volume and enthalpy using a psychrometric calculator, and plotted on a psychrometric chart. Working backwards from the reheater to the humidifier, I applied mass conservation and the steady-flow energy equation to each stage to find the air and vapour mass flow rates and the heat transfer rates of the reheater, the cooler, and the combined preheater and boiler, propagating uncertainties throughout using partial derivatives.`,
+      `The combined preheater and boiler rate came out at 5.90 ± 0.48 kW against the quoted 6 kW (-1.7% error), but the reheater rate was only 0.18 kW against a quoted 1 kW (-82% error). The psychrometric chart showed why: the reheating process appeared as a steep diagonal line, meaning significant dehumidification, rather than the horizontal line expected for pure heating. The report traces these errors to the boiler leak, environmental drift, the reduced number of repeats and single-point temperature measurements in the duct, and recommends extra thermometers across the duct and only taking readings once the system has stabilised.`,
+    ],
+    techStack: ["Psychrometric Analysis"],
+    thumbnail: "assets/projects/ac-lab-thumb.jpg", // Figure 1 of the report (P.A. Hilton product photo)
+    thumbnailAlt: "The Hilton A660 air conditioning laboratory unit: a ducted air system with fan, control panel and refrigeration components on a wheeled frame",
     links: {
-      report: "https://example.com/compliant-gripper-report.pdf",
+      report: "assets/projects/ac-lab-report.pdf", // report without the cover page (no CID / tutor group)
     },
+    media: [],
+    year: "2026",
   },
 ];

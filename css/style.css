@@ -21,6 +21,11 @@
   --cat-ml: #A48BE0;
   --cat-mech: #E0A45A;
 
+  /* Project status dots. Referenced from js/projects-data.js. */
+  --status-completed: #B4B8BE;
+  --status-updating: #D9C25A;
+  --status-in-progress: #E0786C;
+
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
@@ -285,7 +290,7 @@ main {
 }
 
 .page-header {
-  padding-block: clamp(56px, 9vw, 112px) clamp(32px, 5vw, 56px);
+  padding-block: clamp(32px, 5vw, 56px) clamp(32px, 5vw, 48px);
 }
 
 .page-title {
@@ -397,10 +402,9 @@ main {
 }
 
 .hero-photo {
-  width: clamp(120px, 14vw, 184px);
+  /* Full, uncropped photo; height follows the image's own proportions. */
+  width: clamp(160px, 19vw, 260px);
   height: auto;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
   background: var(--surface);
   border: 1px solid var(--border);
 }
@@ -618,6 +622,7 @@ main {
 }
 
 .card-media {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
@@ -629,6 +634,40 @@ main {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Project status: round dot (categories use squares) + mono label */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status, var(--muted));
+}
+
+.card-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 9px;
+  background: rgba(10, 11, 13, 0.88);
+  border: 1px solid var(--border-strong);
+}
+
+.meta-list .status {
+  font-size: 13px;
 }
 
 .media-fallback {
@@ -838,6 +877,15 @@ main {
   color: inherit;
 }
 
+.detail-note {
+  margin-top: 24px;
+  max-width: 60ch;
+  padding-left: 12px;
+  border-left: 2px solid var(--border-strong);
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .detail-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
@@ -861,8 +909,14 @@ main {
   max-width: 68ch;
 }
 
-.prose p + p {
+.prose > * + * {
   margin-top: 1.1em;
+}
+
+/* Images placed between paragraphs get a little more room */
+.prose > figure,
+.prose > figure + * {
+  margin-top: 2em;
 }
 
 .media-list > * + * {
@@ -902,6 +956,26 @@ main {
   font-size: 14px;
   font-weight: 400;
   letter-spacing: 0;
+}
+
+/* Heading row with an optional note on the right, e.g. "Subject to change" */
+.aside-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+
+.aside-heading .aside-title {
+  margin-bottom: 0;
+}
+
+.aside-note {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
 }
 
 .stack-list {
