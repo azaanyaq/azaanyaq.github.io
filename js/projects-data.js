@@ -38,7 +38,9 @@
                   view, e.g. why there's no public code
      media        Array of { type, src, caption?, alt?, title?, poster? }
                   Built-in types: "image", "video", "embed" (iframe: YouTube,
-                  Vimeo, interactive demos). Empty [] renders nothing
+                  Vimeo, interactive demos). Empty [] renders nothing.
+                  An "embed" of a page on this site can set autoHeight: true
+                  to grow the iframe to fit (the page must post its height)
      year, role, team
                   Shown in the "Details" sidebar
      meta         Extra label -> value pairs for the "Details" sidebar,
@@ -215,11 +217,20 @@ That redesign cut position error by 12.7% on a long walk (3.64m → 3.18m error)
     categories: ["ml-software"],
     status: "updating",
     oneLiner: "A NumPy-only neural network library with hand-written backprop, gradient checking, and a live training visualiser.",
-    description: `EduNet is a neural network library built entirely from scratch in Python - forward propagation, backpropagation, and gradient descent implemented by hand in NumPy, with no ML framework underneath.
+    description: [
+      `EduNet is a neural network library built entirely from scratch in Python - forward propagation, backpropagation, and gradient descent implemented by hand in NumPy, with no ML framework underneath.
 
 Correctness is verified with gradient checking - comparing analytical gradients against an independent numerical estimate - rather than just trusting a dropping cost curve, with accuracy to 1e-7. The library supports swappable activation and cost functions, and is packaged as a pip-installable Python package on PyPI.
 
 An interactive visualiser lets you watch a network train in real time: decision boundaries forming, gradients flowing through the network diagram, and cost dropping - built as a teaching tool as much as a working library. It's aimed at being updated incrementally with new features over time.`,
+      {
+        type: "embed",
+        src: "demos/edunet/",
+        title: "Interactive EduNet visualiser demo",
+        autoHeight: true,
+        caption: "Interactive demo: a browser port of EduNet's visualiser, using the same preset as demo_vis() (a [2, 5, 5, 1] network, 200 epochs, learning rate 0.6). Pick a dataset, press Play, or click a point to follow it through the network.",
+      },
+    ],
     techStack: ["Python", "NumPy", "PyPI Packaging"],
     thumbnail: "assets/projects/edunet-thumb.jpg",
     thumbnailAlt: "EduNet's training visualiser showing a small neural network with positive and negative weights in blue and red",
@@ -247,7 +258,8 @@ I authored the majority of the technical report, including a full failure mode a
     thumbnail: "assets/projects/f24-thumb.jpg",
     thumbnailAlt: "The Imperial F24 kit car with its drivetrain housing under a clear cover",
     links: {
-      // no public repo for a manufactured mechanical project - could add a "Report" link if you digitize the technical report
+      report: "assets/projects/f24-drivetrain-report.pdf",
+      poster: { url: "assets/projects/f24-design-poster.pdf", label: "Design Poster" },
     },
     media: [],
     year: "2025",

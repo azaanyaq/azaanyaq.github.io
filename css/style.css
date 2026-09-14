@@ -944,6 +944,16 @@ main {
   border: 0;
 }
 
+.media-embed.auto-height {
+  aspect-ratio: auto;
+}
+
+.media-embed.auto-height iframe {
+  position: static;
+  display: block;
+  height: 720px; /* replaced by the height the embedded page reports */
+}
+
 .media-item figcaption {
   margin-top: 10px;
   color: var(--muted);

@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EduNet Visualiser · Browser Demo</title>
+  <meta name="description" content="Interactive browser port of EduNet's neural network training visualiser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <!--
+    Browser port of EduNet's matplotlib visualiser
+    (github.com/azaanyaq/edunet: EduNet/visualizer/app.py, training_capture.py,
+    datasets.py, colors.py), preconfigured like
+    demo_vis(architecture=[2, 5, 5, 1], epochs=200, alpha=0.6).
+    Embedded in the EduNet project on the Projects page; it posts its own
+    height to the parent page so the iframe can size itself.
+  -->
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #000000;
+      --text: #e0e0e0;
+      --dim: #888888;
+      --spine: #555555;
+      --btn: #232a3f;
+      --btn-hover: #35406a;
+      --btn-active: #3f6fae;
+      --blue: #4fa3ff;
+      --yellow: #ffd25a;
+      --font: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+    }
+
+    .app {
+      padding: 14px 16px 18px;
+    }
+
+    .app-title {
+      margin: 0 0 12px;
+      color: var(--dim);
+      font-size: 11px;
+      font-weight: 400;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+      align-items: start;
+      gap: 18px 22px;
+    }
+
+    .col {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+    }
+
+    .net {
+      aspect-ratio: 1 / 1;
+    }
+
+    .scatter {
+      aspect-ratio: 5 / 4;
+      cursor: crosshair;
+    }
+
+    .cost {
+      height: 120px;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 3.8em minmax(0, 1fr) 3.4em auto;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .slider-row.no-button {
+      grid-template-columns: 3.8em minmax(0, 1fr) 3.4em;
+    }
+
+    input[type="range"] {
+      --pct: 0%;
+      --fill: var(--blue);
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 12px;
+      margin: 0;
+      background: linear-gradient(to right, var(--fill) 0 var(--pct), #d6d6d6 var(--pct) 100%);
+      cursor: pointer;
+    }
+
+    input[type="range"].speed {
+      --fill: var(--yellow);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      border: 1px solid #9a9a9a;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 15px;
+      height: 15px;
+      border: 1px solid #9a9a9a;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+
+    input[type="range"]:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 3px;
+    }
+
+    input[type="range"]:disabled {
+      cursor: progress;
+      opacity: 0.6;
+    }
+
+    button {
+      padding: 7px 12px;
+      border: 0;
+      background: var(--btn);
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--btn-hover);
+    }
+
+    button.is-active {
+      background: var(--btn-active);
+    }
+
+    button:disabled {
+      cursor: progress;
+    }
+
+    .view-toggle {
+      justify-self: start;
+      min-width: 60%;
+    }
+
+    .datasets {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .hint {
+      margin: -4px 0 0;
+      color: var(--dim);
+      font-size: 11px;
+    }
+
+    .info {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+      gap: 10px;
+      min-height: 3.2em;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .info .status {
+      grid-column: 1 / -1;
+      align-self: center;
+      color: var(--yellow);
+      text-align: center;
+    }
+
+    .legend {
+      margin: 4px 0 0;
+      overflow-x: auto;
+      font-size: 11.5px;
+      line-height: 1.75;
+    }
+
+    /* pre only on the lines themselves, so the HTML whitespace between them collapses */
+    .legend span {
+      display: block;
+      white-space: pre;
+    }
+
+    @media (max-width: 560px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 380px) {
+      .app {
+        padding: 12px 10px 14px;
+      }
+
+      .datasets {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .legend {
+        font-size: 10.5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <p class="app-title">NEURAL NETWORK VISUALIZER</p>
+
+    <div class="layout">
+      <section class="col" aria-label="Network">
+        <canvas class="net" id="net" role="img" aria-label="Network diagram. Node colours show activations for the selected point; edge colours show weights, or gradients during Play."></canvas>
+
+        <div class="slider-row">
+          <label for="epoch">EPOCH</label>
+          <input type="range" id="epoch" min="0" max="199" step="1" value="0">
+          <output id="epoch-value" for="epoch">0</output>
+          <button type="button" id="play">Play</button>
+        </div>
+
+        <div class="slider-row no-button">
+          <label for="speed">SPEED</label>
+          <input type="range" class="speed" id="speed" min="0.1" max="5" step="0.1" value="1">
+          <output id="speed-value" for="speed">1.0x</output>
+        </div>
+
+        <p class="legend" aria-label="Legend">
+          <span style="color:#e0e0e0">FORWARD VIEW</span>
+          <span style="color:#cccccc">  node color = activation (black->white)</span>
+          <span style="color:#3296ff">  edge blue = +weight</span>
+          <span style="color:#ff2828">  edge red = -weight</span>
+          <span style="color:#e0e0e0">BACKWARD VIEW (during Play)</span>
+          <span style="color:#50e678">  node/edge green = +gradient</span>
+          <span style="color:#b95ae6">  node/edge purple = -gradient</span>
+        </p>
+      </section>
+
+      <section class="col" aria-label="Training data and cost">
+        <button type="button" class="view-toggle" id="view">View: Heatmap</button>
+        <div class="datasets" id="datasets" role="group" aria-label="Dataset"></div>
+        <canvas class="scatter" id="scatter" role="img" aria-label="Training points over the network's decision boundary. Click a point to select it."></canvas>
+        <p class="hint">Click a point to follow it through the network.</p>
+        <div class="info" id="info" aria-live="polite"></div>
+        <canvas class="cost" id="cost" role="img" aria-label="Cost curve across training epochs, with a marker at the current epoch."></canvas>
+      </section>
+    </div>
+
+    <noscript><p>This demo needs JavaScript enabled.</p></noscript>
+  </main>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* ---------- Preset (demo_vis(architecture=[2, 5, 5, 1], epochs=200, alpha=0.6)) ---------- */
+
+      const ARCHITECTURE = [2, 5, 5, 1];
+      const EPOCHS = 200;
+      const ALPHA = 0.6;
+      const GRID_RES = 40;
+      const GRID_PAD = 1.0;
+
+      /* ---------- Random numbers ---------- */
+
+      function mulberry32(seed) {
+        return function () {
+          seed |= 0;
+          seed = (seed + 0x6d2b79f5) | 0;
+          let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      // seed = null -> unseeded, like np.random.seed(None)
+      function makeRng(seed) {
+        const u = seed == null ? Math.random : mulberry32(seed);
+        let spare = null;
+        return {
+          uniform: (lo, hi) => lo + (hi - lo) * u(),
+          randn() {
+            if (spare !== null) {
+              const s = spare;
+              spare = null;
+              return s;
+            }
+            let x, y, r;
+            do {
+              x = u() * 2 - 1;
+              y = u() * 2 - 1;
+              r = x * x + y * y;
+            } while (r === 0 || r >= 1);
+            const f = Math.sqrt((-2 * Math.log(r)) / r);
+            spare = y * f;
+            return x * f;
+          },
+          permutation(n) {
+            const a = Array.from({ length: n }, (_, i) => i);
+            for (let i = n - 1; i > 0; i--) {
+              const j = Math.floor(u() * (i + 1));
+              [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+          },
+        };
+      }
+
+      /* ---------- Datasets (visualizer/datasets.py) ---------- */
+
+      function shuffled(rng, X, y) {
+        const idx = rng.permutation(X.length);
+        return { X: idx.map((i) => X[i]), y: idx.map((i) => y[i]) };
+      }
+
+      function makeBlobs() {
+        const rng = makeRng(1), X = [], y = [];
+        for (const [cx, cy, label] of [[-1.3, -1.0, 0], [1.3, 1.0, 1]]) {
+          for (let i = 0; i < 10; i++) {
+            X.push([rng.randn() * 0.6 + cx, rng.randn() * 0.6 + cy]);
+            y.push(label);
+          }
+        }
+        return shuffled(rng, X, y);
+      }
+
+      function makeXor() {
+        const rng = makeRng(2), X = [], y = [];
+        // same-sign quadrants -> 0, opposite-sign -> 1
+        for (const [cx, cy, label] of [[1, 1, 0], [1, -1, 1], [-1, 1, 1], [-1, -1, 0]]) {
+          for (let i = 0; i < 8; i++) {
+            X.push([rng.randn() * 0.35 + cx, rng.randn() * 0.35 + cy]);
+            y.push(label);
+          }
+        }
+        return shuffled(rng, X, y);
+      }
+
+      function makeCircles() {
+        const rng = makeRng(3), X = [], y = [];
+        // outer ring -> 0, inner ring -> 1
+        for (const [radius, label] of [[1.6, 0], [0.7, 1]]) {
+          for (let i = 0; i < 25; i++) {
+            const theta = rng.uniform(0, 2 * Math.PI);
+            const r = radius + rng.randn() * 0.12;
+            X.push([r * Math.cos(theta), r * Math.sin(theta)]);
+            y.push(label);
+          }
+        }
+        return shuffled(rng, X, y);
+      }
+
+      function makeMoons() {
+        const rng = makeRng(4), X = [], y = [];
+        for (let i = 0; i < 25; i++) {
+          const t = rng.uniform(0, Math.PI);
+          X.push([Math.cos(t), Math.sin(t)]);
+          y.push(0);
+        }
+        for (let i = 0; i < 25; i++) {
+          const t = rng.uniform(0, Math.PI);
+          X.push([1 - Math.cos(t), 1 - Math.sin(t) - 0.5]);
+          y.push(1);
+        }
+        for (const p of X) {
+          p[0] = p[0] * 1.8 + rng.randn() * 0.12;
+          p[1] = p[1] * 1.8 + rng.randn() * 0.12;
+        }
+        return shuffled(rng, X, y);
+      }
+
+      const PRESET_DATASETS = [
+        ["Blobs", makeBlobs],
+        ["XOR", makeXor],
+        ["Circles", makeCircles],
+        ["Moons", makeMoons],
+      ];
+
+      function linspace(a, b, n) {
+        return Array.from({ length: n }, (_, i) => (n === 1 ? a : a + ((b - a) * i) / (n - 1)));
+      }
+
+      function median(values) {
+        const s = [...values].sort((a, b) => a - b);
+        const mid = s.length >> 1;
+        return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+      }
+
+      function populationStd(values) {
+        const mean = values.reduce((a, v) => a + v, 0) / values.length;
+        return Math.sqrt(values.reduce((a, v) => a + (v - mean) ** 2, 0) / values.length);
+      }
+
+      // Grid bounds from the non-outlier points (modified z-score <= 3.5), padded by one spread
+      function makeGridAxes(X, pad, res) {
+        const bounds = (values) => {
+          const med = median(values);
+          const robustStd = 1.4826 * median(values.map((v) => Math.abs(v - med)));
+          const inliers = robustStd === 0 ? values : values.filter((v) => Math.abs(v - med) / robustStd <= 3.5);
+          const spread = populationStd(inliers) || populationStd(values) || 1;
+          return [Math.min(...inliers) - pad * spread, Math.max(...inliers) + pad * spread];
+        };
+        const [x0, x1] = bounds(X.map((p) => p[0]));
+        const [y0, y1] = bounds(X.map((p) => p[1]));
+        return { xs: linspace(x0, x1, res), ys: linspace(y0, y1, res) };
+      }
+
+      /* ---------- Network + training capture (network/core.py, visualizer/training_capture.py) ---------- */
+
+      const sigmoid = (z) => 1 / (1 + Math.exp(-z));
+
+      function trainAndCapture(n, X, y, epochs, alpha) {
+        const rng = makeRng(null);
+        const L = n.length - 1;
+        const m = X.length;
+
+        // W[l]: n[l] x n[l-1], b[l]: n[l], standard normal init
+        const W = [null], b = [null];
+        for (let l = 1; l <= L; l++) {
+          W.push(Array.from({ length: n[l] }, () => Float64Array.from({ length: n[l - 1] }, () => rng.randn())));
+          b.push(Float64Array.from({ length: n[l] }, () => rng.randn()));
+        }
+
+        // prepare_data(): standardise each feature to mean 0, std 1
+        const mean = [0, 1].map((k) => X.reduce((s, p) => s + p[k], 0) / m);
+        const sd = [0, 1].map((k) => {
+          const v = Math.sqrt(X.reduce((s, p) => s + (p[k] - mean[k]) ** 2, 0) / m);
+          return v === 0 ? 1 : v;
+        });
+        const Xstd = X.map((p) => [(p[0] - mean[0]) / sd[0], (p[1] - mean[1]) / sd[1]]);
+        const A0 = [Float64Array.from(Xstd, (p) => p[0]), Float64Array.from(Xstd, (p) => p[1])]; // n[0] x m
+        const Y = Float64Array.from(y);
+
+        // Decision-boundary grid, built in raw units and standardised the same way (predict_grid)
+        const { xs, ys } = makeGridAxes(X, GRID_PAD, GRID_RES);
+        const gridCount = xs.length * ys.length;
+        const gridA0 = [new Float64Array(gridCount), new Float64Array(gridCount)];
+        for (let r = 0; r < ys.length; r++) {
+          for (let c = 0; c < xs.length; c++) {
+            const i = r * xs.length + c;
+            gridA0[0][i] = (xs[c] - mean[0]) / sd[0];
+            gridA0[1][i] = (ys[r] - mean[1]) / sd[1];
+          }
+        }
+
+        function feedForward(A0cols, count) {
+          const cache = [A0cols];
+          let A = A0cols;
+          for (let l = 1; l <= L; l++) {
+            const out = [];
+            for (let i = 0; i < n[l]; i++) {
+              const row = new Float64Array(count), Wi = W[l][i], bi = b[l][i];
+              for (let j = 0; j < count; j++) {
+                let z = bi;
+                for (let k = 0; k < n[l - 1]; k++) z += Wi[k] * A[k][j];
+                row[j] = sigmoid(z);
+              }
+              out.push(row);
+            }
+            cache.push(out);
+            A = out;
+          }
+          return cache;
+        }
+
+        const snapshots = [];
+        for (let e = 0; e < epochs; e++) {
+          const cache = feedForward(A0, m);
+          const yHat = cache[L][0];
+
+          // BinaryCrossEntropy.forward
+          let cost = 0;
+          for (let j = 0; j < m; j++) cost += -(Y[j] * Math.log(yHat[j]) + (1 - Y[j]) * Math.log(1 - yHat[j]));
+          cost /= m;
+
+          const dW = [], db = [], dZ = [];
+          let propagator = null;
+          for (let l = L; l >= 1; l--) {
+            const A_l = cache[l], A_prev = cache[l - 1];
+
+            const dZl = [];
+            for (let i = 0; i < n[l]; i++) {
+              const row = new Float64Array(m);
+              for (let j = 0; j < m; j++) {
+                const a = A_l[i][j];
+                const upstream = l === L
+                  ? (1 / m) * (-(Y[j] / a) + (1 - Y[j]) / (1 - a)) // BinaryCrossEntropy.backward
+                  : propagator[i][j];
+                row[j] = upstream * a * (1 - a); // Sigmoid.backward
+              }
+              dZl.push(row);
+            }
+
+            const dWl = [];
+            for (let i = 0; i < n[l]; i++) {
+              const row = new Float64Array(n[l - 1]);
+              for (let k = 0; k < n[l - 1]; k++) {
+                let s = 0;
+                for (let j = 0; j < m; j++) s += dZl[i][j] * A_prev[k][j];
+                row[k] = s;
+              }
+              dWl.push(row);
+            }
+            const dbl = Float64Array.from(dZl, (row) => row.reduce((s, v) => s + v, 0));
+
+            // Propagator for the layer below uses the weights BEFORE this epoch's update
+            const next = [];
+            for (let k = 0; k < n[l - 1]; k++) {
+              const row = new Float64Array(m);
+              for (let j = 0; j < m; j++) {
+                let s = 0;
+                for (let i = 0; i < n[l]; i++) s += W[l][i][k] * dZl[i][j];
+                row[j] = s;
+              }
+              next.push(row);
+            }
+
+            dZ[l] = dZl;
+            dW[l] = dWl;
+            db[l] = dbl;
+            propagator = next;
+          }
+
+          for (let l = 1; l <= L; l++) {
+            for (let i = 0; i < n[l]; i++) {
+              for (let k = 0; k < n[l - 1]; k++) W[l][i][k] -= alpha * dW[l][i][k];
+              b[l][i] -= alpha * db[l][i];
+            }
+          }
+
+          snapshots.push({
+            epoch: e,
+            cost,
+            weights: W.map((Wl) => Wl && Wl.map((row) => Float64Array.from(row))), // after this step's update
+            activations: cache,
+            dW,
+            dZ,
+            boundary: feedForward(gridA0, gridCount)[L][0], // uses the updated weights
+          });
+        }
+
+        return { n, L, Xraw: X, Xstd, y, xs, ys, snapshots };
+      }
+
+      /* ---------- Colours (visualizer/colors.py) ---------- */
+
+      const NODE_FWD_LOW = [8, 8, 8], NODE_FWD_HIGH = [255, 255, 255];
+      const W_POS = [50, 150, 255], W_NEG = [255, 40, 40];
+      const G_POS = [80, 230, 120], G_NEG = [185, 90, 230];
+      const HEATMAP_LOW = [30, 35, 50], HEATMAP_HIGH = [79, 163, 255];
+      const CLASS_1 = "#4fa3ff", CLASS_0 = "#ff8a5c";
+      const SPINE = "#555555";
+
+      const clamp01 = (t) => Math.max(0, Math.min(1, t));
+      const mix = (c1, c2, t) => c1.map((v, i) => v + (c2[i] - v) * clamp01(t));
+      const rgba = (c, a = 1) => `rgba(${Math.round(c[0])}, ${Math.round(c[1])}, ${Math.round(c[2])}, ${a})`;
+      const exaggerate = (t) => clamp01(t) ** 0.6;
+
+      function forwardNodeColor(v, layerMin, layerMax) {
+        const span = layerMax - layerMin;
+        return mix(NODE_FWD_LOW, NODE_FWD_HIGH, span <= 1e-12 ? 0.5 : (v - layerMin) / span);
+      }
+      const inputNodeColor = (v) => mix(NODE_FWD_LOW, NODE_FWD_HIGH, 1 / (1 + Math.exp(-v)));
+      function weightEdgeStyle(w, maxAbs) {
+        const t = exaggerate(maxAbs > 0 ? Math.abs(w) / maxAbs : 0);
+        return { color: w >= 0 ? W_POS : W_NEG, alpha: 0.25 + 0.7 * t };
+      }
+      const gradNodeColor = (v, maxAbs) => mix(NODE_FWD_LOW, NODE_FWD_HIGH, exaggerate(maxAbs > 0 ? Math.abs(v) / maxAbs : 0));
+      function gradEdgeStyle(g, maxAbs) {
+        const t = exaggerate(maxAbs > 0 ? Math.abs(g) / maxAbs : 0);
+        return { color: g >= 0 ? G_POS : G_NEG, alpha: 0.25 + 0.7 * t };
+      }
+
+      /* ---------- App state ---------- */
+
+      const els = {
+        net: document.getElementById("net"),
+        scatter: document.getElementById("scatter"),
+        cost: document.getElementById("cost"),
+        info: document.getElementById("info"),
+        epoch: document.getElementById("epoch"),
+        epochValue: document.getElementById("epoch-value"),
+        speed: document.getElementById("speed"),
+        speedValue: document.getElementById("speed-value"),
+        play: document.getElementById("play"),
+        view: document.getElementById("view"),
+        datasets: document.getElementById("datasets"),
+      };
+
+      const state = {
+        epoch: 0,
+        selected: 0,
+        playing: false,
+        boundaryMode: "heatmap", // "heatmap" or "contour"
+        speed: 1.0,
+        activeDataset: null,
+      };
+
+      let data = null;
+      let playToken = 0;
+      const datasetButtons = {};
+      // What the diagram currently shows; transition frames update parts of it
+      const view = { nodes: [], edges: [] };
+
+      const currentSnap = () => data.snapshots[state.epoch];
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      // Waits for a paint so status text shows before training blocks the thread.
+      // The timeout covers background tabs and offscreen iframes, where
+      // requestAnimationFrame may never fire.
+      const nextFrame = () => new Promise((resolve) => {
+        requestAnimationFrame(() => resolve());
+        setTimeout(resolve, 50);
+      });
+
+      function buildView() {
+        view.nodes = data.n.map((count) => Array.from({ length: count }, () => NODE_FWD_LOW));
+        view.edges = data.n.map((count, l) =>
+          l === 0 ? null : Array.from({ length: count }, () =>
+            Array.from({ length: data.n[l - 1] }, () => ({ color: [50, 150, 255], alpha: 0.3 }))
+          )
+        );
+      }
+
+      function nodePositions(n) {
+        const L = n.length - 1;
+        const xs = L > 0 ? linspace(1, 9, L + 1) : [5];
+        return n.map((count, l) => (count === 1 ? [5] : linspace(1, 9, count)).map((yy) => [xs[l], yy]));
+      }
+
+      /* ---------- Drawing ---------- */
+
+      function setupCanvas(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
+        const bw = Math.round(w * dpr), bh = Math.round(h * dpr);
+        if (canvas.width !== bw || canvas.height !== bh) {
+          canvas.width = bw;
+          canvas.height = bh;
+        }
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+        return { ctx, w, h };
+      }
+
+      function drawNet() {
+        const { ctx, w, h } = setupCanvas(els.net);
+        const size = Math.min(w, h) - 2;
+        const ox = (w - size) / 2, oy = (h - size) / 2;
+        const px = (x) => ox + (x / 10) * size;
+        const py = (y) => oy + (1 - y / 10) * size;
+        const pos = nodePositions(data.n);
+
+        ctx.lineWidth = Math.max(1, size * 0.0026);
+        for (let l = 1; l <= data.L; l++) {
+          for (let i = 0; i < data.n[l]; i++) {
+            for (let j = 0; j < data.n[l - 1]; j++) {
+              const style = view.edges[l][i][j];
+              ctx.strokeStyle = rgba(style.color, style.alpha);
+              ctx.beginPath();
+              ctx.moveTo(px(pos[l - 1][j][0]), py(pos[l - 1][j][1]));
+              ctx.lineTo(px(pos[l][i][0]), py(pos[l][i][1]));
+              ctx.stroke();
+            }
+          }
+        }
+
+        const radius = (0.35 / 10) * size;
+        ctx.lineWidth = Math.max(1, size * 0.0028);
+        ctx.strokeStyle = "#e6e6e6";
+        for (let l = 0; l <= data.L; l++) {
+          for (let i = 0; i < data.n[l]; i++) {
+            ctx.beginPath();
+            ctx.arc(px(pos[l][i][0]), py(pos[l][i][1]), radius, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(view.nodes[l][i]);
+            ctx.fill();
+            ctx.stroke();
+          }
+        }
+
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = SPINE;
+        ctx.strokeRect(ox + 0.5, oy + 0.5, size - 1, size - 1);
+      }
+
+      const heatCanvas = document.createElement("canvas");
+
+      function drawContour(ctx, values, xs, ys, toX, toY, level) {
+        const nx = xs.length, ny = ys.length;
+        const at = (c, r) => values[r * nx + c];
+        const lerp = (p, q, vp, vq) => (vq === vp ? (p + q) / 2 : p + ((q - p) * (level - vp)) / (vq - vp));
+        ctx.beginPath();
+        for (let r = 0; r < ny - 1; r++) {
+          for (let c = 0; c < nx - 1; c++) {
+            const bl = at(c, r), br = at(c + 1, r), tr = at(c + 1, r + 1), tl = at(c, r + 1);
+            const idx = (bl > level ? 1 : 0) | (br > level ? 2 : 0) | (tr > level ? 4 : 0) | (tl > level ? 8 : 0);
+            if (idx === 0 || idx === 15) continue;
+            const x0 = xs[c], x1 = xs[c + 1], y0 = ys[r], y1 = ys[r + 1];
+            const bottom = [lerp(x0, x1, bl, br), y0];
+            const right = [x1, lerp(y0, y1, br, tr)];
+            const top = [lerp(x0, x1, tl, tr), y1];
+            const left = [x0, lerp(y0, y1, bl, tl)];
+            const segs = [];
+            switch (idx) {
+              case 1: case 14: segs.push([left, bottom]); break;
+              case 2: case 13: segs.push([bottom, right]); break;
+              case 3: case 12: segs.push([left, right]); break;
+              case 4: case 11: segs.push([top, right]); break;
+              case 6: case 9: segs.push([bottom, top]); break;
+              case 7: case 8: segs.push([left, top]); break;
+              case 5: case 10: {
+                // Saddle: resolve with the cell-centre average
+                const centreAbove = (bl + br + tr + tl) / 4 > level;
+                if ((idx === 5) === centreAbove) segs.push([left, top], [bottom, right]);
+                else segs.push([left, bottom], [top, right]);
+                break;
+              }
+            }
+            for (const [p, q] of segs) {
+              ctx.moveTo(toX(p[0]), toY(p[1]));
+              ctx.lineTo(toX(q[0]), toY(q[1]));
+            }
+          }
+        }
+        ctx.stroke();
+      }
+
+      function drawScatter() {
+        const { ctx, w, h } = setupCanvas(els.scatter);
+        const snap = currentSnap();
+        const { xs, ys } = data;
+        const ext = [xs[0], xs[xs.length - 1], ys[0], ys[ys.length - 1]];
+        const toX = (v) => ((v - ext[0]) / (ext[1] - ext[0])) * w;
+        const toY = (v) => h - ((v - ext[2]) / (ext[3] - ext[2])) * h;
+
+        if (state.boundaryMode === "heatmap") {
+          const nx = xs.length, ny = ys.length;
+          heatCanvas.width = nx;
+          heatCanvas.height = ny;
+          const hctx = heatCanvas.getContext("2d");
+          const img = hctx.createImageData(nx, ny);
+          for (let r = 0; r < ny; r++) {
+            for (let c = 0; c < nx; c++) {
+              const col = mix(HEATMAP_LOW, HEATMAP_HIGH, snap.boundary[r * nx + c]);
+              const o = ((ny - 1 - r) * nx + c) * 4; // origin="lower"
+              img.data[o] = col[0];
+              img.data[o + 1] = col[1];
+              img.data[o + 2] = col[2];
+              img.data[o + 3] = 255;
+            }
+          }
+          hctx.putImageData(img, 0, 0);
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(heatCanvas, 0, 0, w, h);
+        } else {
+          ctx.strokeStyle = "#e0e0e0";
+          ctx.lineWidth = 2;
+          ctx.lineJoin = "round";
+          drawContour(ctx, snap.boundary, xs, ys, toX, toY, 0.5);
+        }
+
+        const scale = Math.max(0.75, Math.min(1.1, w / 540));
+        const drawPoint = (i, selected) => {
+          const [x, y] = data.Xraw[i];
+          ctx.beginPath();
+          ctx.arc(toX(x), toY(y), (selected ? 7.4 : 4.4) * scale, 0, Math.PI * 2);
+          ctx.fillStyle = data.y[i] === 1 ? CLASS_1 : CLASS_0;
+          ctx.fill();
+          ctx.lineWidth = selected ? 3 : 1.4;
+          ctx.strokeStyle = selected ? "#ffffff" : "#000000";
+          ctx.stroke();
+        };
+        for (let i = 0; i < data.Xraw.length; i++) if (i !== state.selected) drawPoint(i, false);
+        drawPoint(state.selected, true);
+
+        const hidden = data.Xraw.filter(([x, y]) => x < ext[0] || x > ext[1] || y < ext[2] || y > ext[3]).length;
+        if (hidden) {
+          ctx.fillStyle = "#ffd25a";
+          ctx.font = '10px "IBM Plex Mono", ui-monospace, monospace';
+          ctx.textBaseline = "top";
+          ctx.fillText(`Warning: ${hidden} outlier ${hidden === 1 ? "point" : "points"} not shown`, 8, 8);
+        }
+
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = SPINE;
+        ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
+      }
+
+      function niceTicks(lo, hi, count) {
+        const span = hi - lo;
+        if (!(span > 0)) return { ticks: [lo], step: 1 };
+        const raw = span / count;
+        const mag = 10 ** Math.floor(Math.log10(raw));
+        const norm = raw / mag;
+        const step = (norm < 1.5 ? 1 : norm < 2.25 ? 2 : norm < 3.5 ? 2.5 : norm < 7.5 ? 5 : 10) * mag;
+        const ticks = [];
+        for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-9; v += step) {
+          ticks.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+        }
+        return { ticks, step };
+      }
+
+      function formatTick(v, step) {
+        const exp = Math.floor(Math.log10(step));
+        const mantissa = Math.round((step / 10 ** exp) * 10) / 10;
+        const decimals = Math.max(0, -exp + (mantissa === 2.5 ? 1 : 0));
+        return v.toFixed(Math.min(decimals, 4));
+      }
+
+      function drawCost() {
+        const { ctx, w, h } = setupCanvas(els.cost);
+        const epochs = data.snapshots.map((s) => s.epoch);
+        const costs = data.snapshots.map((s) => s.cost);
+        const padL = 38, padR = 8, padT = 6, padB = 20;
+        const aw = Math.max(1, w - padL - padR), ah = Math.max(1, h - padT - padB);
+
+        const first = epochs[0], last = epochs[epochs.length - 1];
+        const xPad = (last - first) * 0.05 || 0.5;
+        const xMin = first - xPad, xMax = last + xPad;
+        const finite = costs.filter(Number.isFinite);
+        let yMin = 0, yMax = 1;
+        if (finite.length) {
+          const lo = Math.min(...finite), hi = Math.max(...finite);
+          const pad = (hi - lo) * 0.1 || 0.05;
+          yMin = lo - pad;
+          yMax = hi + pad;
+        }
+        const toX = (v) => padL + ((v - xMin) / (xMax - xMin)) * aw;
+        const toY = (v) => padT + ah - ((v - yMin) / (yMax - yMin)) * ah;
+
+        ctx.font = '9px "IBM Plex Mono", ui-monospace, monospace';
+        ctx.fillStyle = "#888888";
+        ctx.strokeStyle = "#888888";
+        ctx.lineWidth = 1;
+
+        const xt = niceTicks(xMin, xMax, Math.max(3, Math.floor(aw / 52)));
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        for (const t of xt.ticks) {
+          const x = Math.round(toX(t)) + 0.5;
+          ctx.beginPath();
+          ctx.moveTo(x, padT + ah);
+          ctx.lineTo(x, padT + ah + 3.5);
+          ctx.stroke();
+          ctx.fillText(formatTick(t, xt.step), x, padT + ah + 5);
+        }
+
+        const yt = niceTicks(yMin, yMax, Math.max(2, Math.floor(ah / 32)));
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        for (const t of yt.ticks) {
+          const y = Math.round(toY(t)) + 0.5;
+          ctx.beginPath();
+          ctx.moveTo(padL - 3.5, y);
+          ctx.lineTo(padL, y);
+          ctx.stroke();
+          ctx.fillText(formatTick(t, yt.step), padL - 6, y);
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(padL, padT, aw, ah);
+        ctx.clip();
+        ctx.strokeStyle = "#e0e0e0";
+        ctx.beginPath();
+        let drawing = false;
+        costs.forEach((c, i) => {
+          if (!Number.isFinite(c)) {
+            drawing = false;
+            return;
+          }
+          if (drawing) ctx.lineTo(toX(epochs[i]), toY(c));
+          else ctx.moveTo(toX(epochs[i]), toY(c));
+          drawing = true;
+        });
+        ctx.stroke();
+
+        const snap = currentSnap();
+        if (Number.isFinite(snap.cost)) {
+          ctx.beginPath();
+          ctx.arc(toX(snap.epoch), toY(snap.cost), 4, 0, Math.PI * 2);
+          ctx.fillStyle = CLASS_1;
+          ctx.fill();
+        }
+        ctx.restore();
+
+        ctx.strokeStyle = SPINE;
+        ctx.strokeRect(padL + 0.5, padT + 0.5, aw - 1, ah - 1);
+      }
+
+      function formatCost(c) {
+        if (Number.isFinite(c)) return c.toFixed(4);
+        return Number.isNaN(c) ? "nan" : c > 0 ? "inf" : "-inf";
+      }
+
+      function updateInfo() {
+        const snap = currentSnap();
+        const i = state.selected;
+        const [x, y] = data.Xraw[i];
+        const label = data.y[i];
+
+        const training = document.createElement("span");
+        training.textContent = `EPOCH    ${snap.epoch}\nCOST     ${formatCost(snap.cost)}`;
+        const sample = document.createElement("span");
+        sample.style.color = label === 1 ? CLASS_1 : CLASS_0;
+        sample.textContent = `POINT    (${x.toFixed(2)}, ${y.toFixed(2)})\nTRUE     ${label}`;
+        els.info.replaceChildren(training, sample);
+      }
+
+      function showStatus(message) {
+        const status = document.createElement("span");
+        status.className = "status";
+        status.textContent = message;
+        els.info.replaceChildren(status);
+      }
+
+      /* ---------- Render + transition frames (app.py render / render_transition_frame) ---------- */
+
+      function applySettled(snap) {
+        const { n, L } = data;
+        data.Xstd[state.selected].forEach((v, i) => (view.nodes[0][i] = inputNodeColor(v)));
+        for (let l = 1; l <= L; l++) {
+          const A = snap.activations[l];
+          let lo = Infinity, hi = -Infinity;
+          for (const row of A) for (const v of row) { if (v < lo) lo = v; if (v > hi) hi = v; }
+          for (let i = 0; i < n[l]; i++) view.nodes[l][i] = forwardNodeColor(A[i][state.selected], lo, hi);
+
+          const Wl = snap.weights[l];
+          let maxAbs = 0;
+          for (const row of Wl) for (const v of row) maxAbs = Math.max(maxAbs, Math.abs(v));
+          for (let i = 0; i < n[l]; i++) {
+            for (let j = 0; j < n[l - 1]; j++) view.edges[l][i][j] = weightEdgeStyle(Wl[i][j], maxAbs);
+          }
+        }
+      }
+
+      function render() {
+        applySettled(currentSnap());
+        drawNet();
+        drawScatter();
+        updateInfo();
+        drawCost();
+      }
+
+      function renderTransitionFrame(nextSnap, phase) {
+        const { n, L } = data;
+        if (phase === "forward") {
+          // Edges keep the previous epoch's weights (the ones these activations came from)
+          data.Xstd[state.selected].forEach((v, i) => (view.nodes[0][i] = inputNodeColor(v)));
+          for (let l = 1; l <= L; l++) {
+            const A = nextSnap.activations[l];
+            let lo = Infinity, hi = -Infinity;
+            for (const row of A) for (const v of row) { if (v < lo) lo = v; if (v > hi) hi = v; }
+            for (let i = 0; i < n[l]; i++) view.nodes[l][i] = forwardNodeColor(A[i][state.selected], lo, hi);
+          }
+        } else {
+          for (let l = 1; l <= L; l++) {
+            const dZl = nextSnap.dZ[l];
+            let maxZ = 0;
+            for (const row of dZl) for (const v of row) maxZ = Math.max(maxZ, Math.abs(v));
+            for (let i = 0; i < n[l]; i++) view.nodes[l][i] = gradNodeColor(dZl[i][state.selected], maxZ);
+
+            const dWl = nextSnap.dW[l];
+            let maxW = 0;
+            for (const row of dWl) for (const v of row) maxW = Math.max(maxW, Math.abs(v));
+            for (let i = 0; i < n[l]; i++) {
+              for (let j = 0; j < n[l - 1]; j++) view.edges[l][i][j] = gradEdgeStyle(dWl[i][j], maxW);
+            }
+          }
+        }
+        drawNet();
+      }
+
+      /* ---------- Controls ---------- */
+
+      function setRangeFill(input) {
+        const min = +input.min, max = +input.max, v = +input.value;
+        input.style.setProperty("--pct", `${max > min ? ((v - min) / (max - min)) * 100 : 0}%`);
+      }
+
+      function syncEpochSlider() {
+        els.epoch.max = String(data.snapshots.length - 1);
+        els.epoch.value = String(state.epoch);
+        els.epochValue.textContent = String(state.epoch);
+        setRangeFill(els.epoch);
+      }
+
+      function setPlaying(playing) {
+        state.playing = playing;
+        els.play.textContent = playing ? "Pause" : "Play";
+      }
+
+      function stopPlaying() {
+        setPlaying(false);
+        playToken++; // cancels any step still in progress
+      }
+
+      async function stepForwardAnimated(token) {
+        const next = (state.epoch + 1) % data.snapshots.length;
+        const nextSnap = data.snapshots[next];
+
+        renderTransitionFrame(nextSnap, "forward");
+        await sleep(120 / state.speed);
+        if (token !== playToken) return;
+        if (!state.playing) {
+          state.epoch = next;
+          render();
+          syncEpochSlider();
+          return;
+        }
+
+        renderTransitionFrame(nextSnap, "backward");
+        await sleep(120 / state.speed);
+        if (token !== playToken) return;
+
+        state.epoch = next;
+        render(); // settle into the new weights + activations
+        syncEpochSlider();
+        await sleep(50 / state.speed);
+      }
+
+      async function playLoop(token) {
+        while (state.playing && token === playToken) await stepForwardAnimated(token);
+      }
+
+      function setBusy(busy) {
+        Object.values(datasetButtons).forEach((btn) => (btn.disabled = busy));
+        els.play.disabled = busy;
+        els.epoch.disabled = busy;
+      }
+
+      function restyleDatasetButtons() {
+        for (const [label, btn] of Object.entries(datasetButtons)) {
+          const active = label === state.activeDataset;
+          btn.classList.toggle("is-active", active);
+          btn.setAttribute("aria-pressed", String(active));
+        }
+      }
+
+      async function switchDataset(label, force) {
+        if (label === state.activeDataset && !force) return; // avoid a pointless retrain
+        stopPlaying();
+        setBusy(true);
+        showStatus(`Training on ${label}...`);
+        await nextFrame();
+        await nextFrame();
+
+        const { X, y } = PRESET_DATASETS.find(([name]) => name === label)[1]();
+        const oldN = data && data.n;
+        data = trainAndCapture(ARCHITECTURE, X, y, EPOCHS, ALPHA);
+        state.epoch = 0;
+        state.selected = 0;
+        state.activeDataset = label;
+        if (!oldN || oldN.join() !== data.n.join()) buildView();
+
+        syncEpochSlider();
+        restyleDatasetButtons();
+        setBusy(false);
+        render();
+        reportHeight();
+      }
+
+      PRESET_DATASETS.forEach(([label]) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = label;
+        btn.addEventListener("click", () => switchDataset(label, false));
+        datasetButtons[label] = btn;
+        els.datasets.append(btn);
+      });
+
+      els.epoch.addEventListener("input", () => {
+        if (!data) return;
+        stopPlaying();
+        state.epoch = Math.round(+els.epoch.value);
+        els.epochValue.textContent = String(state.epoch);
+        setRangeFill(els.epoch);
+        render();
+      });
+
+      els.speed.addEventListener("input", () => {
+        state.speed = +els.speed.value;
+        els.speedValue.textContent = `${state.speed.toFixed(1)}x`;
+        setRangeFill(els.speed);
+      });
+
+      els.play.addEventListener("click", () => {
+        if (!data) return;
+        setPlaying(!state.playing);
+        if (state.playing) playLoop(++playToken);
+      });
+
+      els.view.addEventListener("click", () => {
+        state.boundaryMode = state.boundaryMode === "heatmap" ? "contour" : "heatmap";
+        els.view.textContent = `View: ${state.boundaryMode === "heatmap" ? "Heatmap" : "Contour"}`;
+        if (data) drawScatter();
+      });
+
+      els.scatter.addEventListener("click", (event) => {
+        if (!data) return;
+        const rect = els.scatter.getBoundingClientRect();
+        const fx = (event.clientX - rect.left) / rect.width;
+        const fy = (event.clientY - rect.top) / rect.height;
+        const { xs, ys } = data;
+        const x = xs[0] + fx * (xs[xs.length - 1] - xs[0]);
+        const y = ys[ys.length - 1] - fy * (ys[ys.length - 1] - ys[0]);
+        let best = 0, bestDist = Infinity;
+        data.Xraw.forEach(([px, py], i) => {
+          const d = Math.hypot(px - x, py - y);
+          if (d < bestDist) {
+            bestDist = d;
+            best = i;
+          }
+        });
+        state.selected = best;
+        render();
+      });
+
+      /* ---------- Sizing ---------- */
+
+      // Lets the page that embeds this demo size the iframe to fit
+      function reportHeight() {
+        if (window.parent === window) return;
+        const height = Math.ceil(document.querySelector(".app").getBoundingClientRect().height);
+        window.parent.postMessage({ type: "embed-height", height }, "*");
+      }
+
+      new ResizeObserver(() => {
+        if (data) {
+          drawNet();
+          drawScatter();
+          drawCost();
+        }
+        reportHeight();
+      }).observe(document.querySelector(".app"));
+
+      setRangeFill(els.epoch);
+      setRangeFill(els.speed);
+      const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+      fontsReady.then(() => switchDataset(PRESET_DATASETS[0][0], true));
+    })();
+  </script>
+</body>
+</html>

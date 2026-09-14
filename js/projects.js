@@ -46,17 +46,21 @@
         preload: "metadata",
       });
     },
+    // `autoHeight: true` is for pages on this site that post their own height
+    // (see the "embed-height" message listener): the iframe grows to fit
+    // instead of using a fixed aspect ratio.
     embed(item, project) {
       const frame = h("iframe", {
-        src: item.src,
+        src: asset(item.src),
         title: item.title || item.caption || `${project.title} embedded media`,
         loading: "lazy",
         allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen",
         allowfullscreen: true,
         referrerpolicy: "strict-origin-when-cross-origin",
+        "data-auto-height": item.autoHeight ? true : null,
       });
-      const box = h("div", { class: "media-embed" }, frame);
-      if (item.aspectRatio) box.style.aspectRatio = item.aspectRatio;
+      const box = h("div", { class: "media-embed" + (item.autoHeight ? " auto-height" : "") }, frame);
+      if (item.aspectRatio && !item.autoHeight) box.style.aspectRatio = item.aspectRatio;
       return box;
     },
   };
@@ -231,7 +235,10 @@
   // Paragraph strings, with optional media objects ({ type, src, caption, ... })
   // placed between them to show an image or video inside the write-up.
   function renderDescription(value, project) {
-    const blocks = Array.isArray(value) ? value : String(value).split(/\n\s*\n/);
+    // A string can hold several paragraphs separated by blank lines.
+    const blocks = (Array.isArray(value) ? value : [value]).flatMap((block) =>
+      block && typeof block === "object" ? [block] : String(block).split(/\n\s*\n/)
+    );
     return h(
       "div",
       { class: "prose" },
@@ -622,6 +629,14 @@
   });
 
   window.addEventListener("popstate", syncFromUrl);
+
+  // Embedded pages from this site (e.g. the EduNet demo) post their content height.
+  window.addEventListener("message", (event) => {
+    if (event.origin !== location.origin || !event.data || event.data.type !== "embed-height") return;
+    dialog.querySelectorAll("iframe[data-auto-height]").forEach((frame) => {
+      if (frame.contentWindow === event.source) frame.style.height = `${Math.ceil(event.data.height)}px`;
+    });
+  });
 
   /* ---------- Init ---------- */
 
