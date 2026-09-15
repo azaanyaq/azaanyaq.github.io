@@ -104,9 +104,11 @@ const TECH_DOMAINS = {
   "Kalman Filters": "robotics-autonomy",
   "Sensor Fusion": "robotics-autonomy",
   "iOS Sensor Logging": "robotics-autonomy",
+  "ESP32": "robotics-autonomy",
 
   // Mechanical
   "SolidWorks": "mechanical",
+  "CAD": "mechanical",
   "CNC Machining": "mechanical",
   "GD&T": "mechanical",
   "FMEA": "mechanical",
@@ -141,6 +143,26 @@ const PROJECTS = [
     media: [],
     role: "Co-founder & Head of Automation",
     team: "5+ members",
+  },
+  {
+    id: "elmo",
+    title: "Elmo - Quadruped Robot",
+    categories: ["robotics-autonomy", "mechanical"],
+    status: "in-progress",
+    oneLiner: "Prototyping an 8-DOF quadruped for autonomous navigation testing and RL training.",
+    description: [
+      `Elmo Quadruped is a personal build that adjusts the design of the open-source Sesame quadruped robot, an 8-DOF four-legged platform. The long-term goal is a walking policy trained through reinforcement learning in simulation and transferred to the physical robot, using the community sesame-ml toolkit for MuJoCo-based training, policy evaluation, and sim-to-real deployment.`,
+      `The design targets a full RL-trained locomotion policy, trained first in MuJoCo with PPO and validated against tracking, fall, and collision metrics before ever touching hardware. On the physical side, an ESP32-S2 Mini drives 8× MG90S servos, with the option to move to the toolkit's Orange Pi-based runtime for camera and IMU integration later on. However, as it's still a prototype, the goals could be altered.`,
+      `The project is currently in the planning stage where I am procuring parts and mapping out the functionality.`,
+    ],
+    techStack: ["C++", "CAD", "ESP32"],
+    techStackNote: "Subject to change",
+    // Top-view drawing of the Sesame quadruped (labels removed) until there's a real photo
+    thumbnail: "assets/projects/elmo-thumb.jpg",
+    thumbnailAlt: "Top-view line drawing of the open-source Sesame quadruped's frame, with a servo-driven leg at each corner",
+    links: {},
+    media: [],
+    role: "Sole Developer",
   },
   {
     id: "telebot",

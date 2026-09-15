@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#0A0B0D">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -20,36 +20,56 @@
       <ul class="nav-links">
         <li><a href="./" aria-current="page">About</a></li>
         <li><a href="projects/">Projects</a></li>
-        <li><a href="assets/cv/Azaan-Yaqub-CV.pdf" target="_blank" rel="noopener">CV</a></li>
-        <li><a href="https://www.linkedin.com/in/azaanyaqub/" target="_blank" rel="noopener">LinkedIn<span class="external-mark" aria-hidden="true">↗</span></a></li>
+        <li><a href="contact/">Contact</a></li>
       </ul>
     </nav>
   </header>
 
   <main id="main">
+
+    <!-- ===================== Hero (full width, fills the first screen) ===================== -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-inner container">
+        <!-- Status pill: current role + location (the green dot is added by CSS) -->
+        <p class="hero-status">Co-founder &amp; Head of Automation, Imperial College AUV · London, UK</p>
+        <h1 class="hero-title" id="hero-title">Hi, I'm <span class="text-gradient">Azaan</span></h1>
+        <!-- Identity line -->
+        <p class="hero-tagline">Engineering systems at the intersection of mechanical design, robotics, and computer vision.</p>
+        <!-- Bio -->
+        <p class="hero-bio">I'm a Mechanical Engineering student at Imperial College London focused on robotics and computer vision, working across the stack from CAD to perception software.</p>
+
+        <div class="hero-actions">
+          <a class="hero-btn" href="projects/">View My Work
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+          </a>
+          <a class="hero-btn" href="assets/cv/Azaan-Yaqub-CV.pdf" download="Azaan-Yaqub-CV.pdf">Download CV
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg>
+          </a>
+          <a class="hero-btn is-primary" href="contact/">Get In Touch</a>
+        </div>
+
+        <ul class="hero-social">
+          <li><a href="https://github.com/azaanyaq" target="_blank" rel="noopener" aria-label="GitHub">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>
+          </a></li>
+          <li><a href="https://www.linkedin.com/in/azaanyaqub/" target="_blank" rel="noopener" aria-label="LinkedIn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2zM4 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
+          </a></li>
+          <li><a href="mailto:azaanyaqub2@gmail.com" aria-label="Email">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM3 6l9 7 9-7"/></svg>
+          </a></li>
+        </ul>
+      </div>
+
+      <!-- Scroll cue down to the skills section -->
+      <a class="hero-scroll" href="#skills" aria-label="Scroll to skills"><span></span></a>
+    </section>
+
     <div class="container">
 
-      <!-- ===================== Hero ===================== -->
-      <section class="hero" aria-labelledby="hero-title">
-        <!-- Profile photo: assets/img/profile.jpg (uncropped portrait). If you swap it, update width/height to the new image's pixel size. -->
-        <div class="hero-photo-frame corner-marks">
-          <img class="hero-photo" src="assets/img/profile.jpg" width="800" height="1216" alt="Azaan Yaqub wearing a mixed-reality headset, standing next to a mannequin in a haptic suit">
-        </div>
-        <div>
-          <!-- Identity line -->
-          <h1 class="hero-title" id="hero-title">Engineering systems at the intersection of mechanical design, robotics, and computer vision.</h1>
-          <!-- Bio -->
-          <div class="hero-bio">
-            <p>I'm a Mechanical Engineering student at Imperial College London focused on robotics and computer vision, working across the stack from CAD to perception software.</p>
-          </div>
-          <!-- Status line: current role + location (the green dot is added by CSS) -->
-          <p class="hero-status">Co-founder &amp; Head of Automation, Imperial College AUV · London, UK</p>
-        </div>
-      </section>
-
       <!-- ===================== Skills ===================== -->
-      <section class="section" aria-labelledby="skills-title">
-        <h2 class="section-title" id="skills-title"><span class="section-num" aria-hidden="true">01</span>Skills</h2>
+      <section class="section" id="skills" aria-labelledby="skills-title">
+        <h2 class="section-title" id="skills-title">My <span class="text-gradient">Skills</span></h2>
         <!-- Skill groups. Add or remove .skill-group blocks freely; --cat sets the dot colour -->
         <div class="skills">
           <div class="skill-group" style="--cat: var(--cat-cv)">
@@ -89,7 +109,7 @@
 
       <!-- ===================== Experience ===================== -->
       <section class="section" aria-labelledby="experience-title">
-        <h2 class="section-title" id="experience-title"><span class="section-num" aria-hidden="true">02</span>Work Experience</h2>
+        <h2 class="section-title" id="experience-title">My <span class="text-gradient">Work Experience</span></h2>
         <!-- Work experience, most recent first. Copy an <li> to add one; put is-current on an ongoing role -->
         <ol class="timeline">
           <li class="timeline-item is-current">

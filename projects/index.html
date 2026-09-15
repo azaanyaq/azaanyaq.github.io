@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#0A0B0D">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <!-- data-site-root: path from this page to the site root, used to resolve
@@ -22,17 +22,22 @@
       <ul class="nav-links">
         <li><a href="../">About</a></li>
         <li><a href="./" aria-current="page">Projects</a></li>
-        <li><a href="../assets/cv/Azaan-Yaqub-CV.pdf" target="_blank" rel="noopener">CV</a></li>
-        <li><a href="https://www.linkedin.com/in/azaanyaqub/" target="_blank" rel="noopener">LinkedIn<span class="external-mark" aria-hidden="true">↗</span></a></li>
+        <li><a href="../contact/">Contact</a></li>
       </ul>
     </nav>
   </header>
 
   <main id="main" class="container">
     <header class="page-header">
-      <h1 class="page-title">Projects</h1>
+      <h1 class="page-title">My <span class="text-gradient">Projects</span></h1>
       <!-- PLACEHOLDER: intro line -->
       <p class="page-intro">Selected work across perception, autonomy, software and mechanical design.</p>
+      <!-- Wording swaps to "Tap" on touch screens (see .page-hint in style.css) -->
+      <p class="page-hint">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l7 17 2.5-7.5L21 11 4 4zM14 14l6 6"/></svg>
+        <span class="hint-pointer">Hover and click to learn more about each project</span>
+        <span class="hint-touch">Tap a project to learn more about it</span>
+      </p>
     </header>
 
     <!-- Everything below is rendered from js/projects-data.js -->
