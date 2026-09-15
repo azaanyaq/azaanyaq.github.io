@@ -756,6 +756,17 @@ main {
   gap: 20px;
 }
 
+/* Each <li> stretches to its row and the card grows to fill it, so card
+   bottoms line up; the spare height goes to the card body, not the image. */
+.project-grid > li {
+  display: flex;
+  flex-direction: column;
+}
+
+.project-grid > li > .card {
+  flex: 1 0 auto;
+}
+
 .empty-state {
   padding-block: 48px;
   color: var(--muted);
@@ -765,7 +776,6 @@ main {
   position: relative;
   display: flex;
   flex-direction: column;
-  aspect-ratio: 1 / 1;
   background: var(--surface);
   border: 1px solid var(--border);
   transition: border-color 200ms ease, filter 250ms ease, transform 250ms var(--ease-out);
@@ -821,10 +831,11 @@ main {
   flex: 1;
 }
 
+/* Fixed image shape so every card's image and body edges line up in a row */
 .card-media {
   position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: none;
+  aspect-ratio: 5 / 3;
   overflow: hidden;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
@@ -880,12 +891,17 @@ main {
   font-size: 12px;
 }
 
+/* The body takes any spare height; tags sit at its bottom (see .card .tags) */
 .card-body {
-  flex: none;
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
   padding: 18px 20px 20px;
 }
 
+/* Reserve two lines so one-line titles keep the text below in line */
 .card-title {
+  min-height: 2.4em;
   font-size: 17px;
 }
 
@@ -935,6 +951,11 @@ main {
 
 .tags li::before {
   margin-right: 6px;
+}
+
+.card .tags {
+  margin-top: auto;
+  padding-top: 12px;
 }
 
 /* ---------- Projects: detail overlay ---------- */
